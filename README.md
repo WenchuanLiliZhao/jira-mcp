@@ -1,0 +1,112 @@
+# JIRA MCP
+
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that connects **Cursor AI** to your Jira Cloud workspace. Query tasks, issues, sprints, and comments directly from the IDE — no scripts, no copy-pasting, just ask.
+
+---
+
+## How it works
+
+Once installed, Cursor AI gains access to your Jira data as native tools. You can ask things like:
+
+> "What's assigned to me right now?"
+> "Show me the details and comments on PROJ-42."
+> "What issues are in the current sprint?"
+
+The AI picks the right tool, calls the Jira API, and presents the results — all within the chat.
+
+For scripting or terminal use, a CLI query script is also included.
+
+---
+
+## Features
+
+### MCP Tools (Cursor AI integration)
+
+| Tool | Status | Description |
+|------|:------:|-------------|
+| `list_projects` | ✅ | List all Jira projects accessible to the authenticated user |
+| `list_issues` | ✅ | List issues in a project with optional JQL filter |
+| `get_issue` | ✅ | Full issue detail: description, comments, sprint, attachments, time tracking, subtasks, linked issues |
+| `search_issues` | ✅ | Search with any custom JQL query |
+| `get_my_issues` | ✅ | Issues currently assigned to the authenticated user |
+| `list_sprints` | ✅ | List sprints for a project (active / future / closed) |
+| `get_sprint_issues` | ✅ | All issues inside a specific sprint |
+| Create / update issue | 🔲 | Create new issues or update existing fields from the IDE |
+| Add comment | 🔲 | Post a comment to an issue from the IDE |
+| Transition issue | 🔲 | Move an issue to a new status (e.g. In Progress → Done) |
+| Assign issue | 🔲 | Assign or reassign an issue to a user |
+| `get_user` / `list_members` | 🔲 | Look up team members by name or email |
+| Attachment download | 🔲 | Fetch attachment content (not just metadata) |
+
+### `get_issue` — returned fields
+
+| Field | Description |
+|-------|-------------|
+| `description` | Full issue description (plain text, converted from Atlassian Document Format) |
+| `comments` | `[{ author, created, body }]` — who said what and when |
+| `sprint` | `{ id, name, state, startDate, endDate }` or `null` |
+| `story_points` | Numeric estimate or `null` |
+| `timetracking` | `{ original, remaining, spent }` or `null` |
+| `attachments` | `[{ filename, url, mimeType, size }]` |
+| `subtasks` | `[{ key, summary, status }]` |
+| `issuelinks` | `[{ type, issue }]` — blocks / is blocked by / relates to |
+| `components` | Component names |
+| `resolution` | e.g. `"Fixed"`, `"Won't Do"`, or `null` |
+| `assignee`, `reporter`, `priority`, `labels` | Standard fields |
+
+### CLI Query Script
+
+| Command | Description |
+|---------|-------------|
+| `npm run done` | My completed issues |
+| `npm run inprogress` | My in-progress issues |
+| `npm run todo` | My to-do issues |
+| `npm run all` | All my issues regardless of status |
+| `npm run query -- --project PROJ` | Issues from a specific project |
+| `npm run query -- --jql "..."` | Raw JQL query |
+
+### Setup & AI Guidance
+
+| Feature | Status | Description |
+|---------|:------:|-------------|
+| Interactive `/install` command | ✅ | AI-guided setup: collects credentials, lists projects/boards via API, writes config files |
+| `/jira/query` command | ✅ | Cursor AI rule telling the AI when and how to use each Jira tool |
+| Project-specific config gitignored | ✅ | `secrets.json` and `query.md` are local-only; `.example` files are committed for reference |
+| Guided token generation link | ✅ | `/install` links directly to Atlassian API token page |
+| Multi-project support | 🔲 | Switch between projects without re-running `/install` |
+| Auto-refresh on token expiry | 🔲 | Detect 401 and prompt for a new token |
+
+---
+
+## Quick start
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Register with Cursor — add to ~/.cursor/mcp.json:
+#    { "mcpServers": { "jira": { "command": "node", "args": ["/path/to/jira-mcp/server/mcp-server.js"] } } }
+
+# 3. Restart Cursor, then run in Agent mode:
+/install
+```
+
+The `/install` command will walk you through the rest interactively.
+
+See [INSTALLATION.md](INSTALLATION.md) for full setup details and troubleshooting.
+
+---
+
+## Requirements
+
+- Node.js 18+
+- Cursor IDE (any version with MCP support)
+- Jira Cloud account with API token
+
+---
+
+## Security
+
+- Credentials are stored in `server/secrets.json`, which is listed in `.gitignore` and never committed.
+- The API token grants the same access as your Atlassian account — treat it like a password.
+- Tokens can be revoked at any time from [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).

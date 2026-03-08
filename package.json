@@ -1,0 +1,22 @@
+{
+  "name": "jira-mcp",
+  "version": "1.0.0",
+  "description": "Jira MCP server for Cursor AI — query Jira projects, issues, and sprints directly from the IDE.",
+  "type": "module",
+  "main": "server/mcp-server.js",
+  "scripts": {
+    "start": "node server/mcp-server.js",
+    "query": "node server/query-completed.js",
+    "done": "node server/query-completed.js --status Done",
+    "todo": "node server/query-completed.js --status 'To Do'",
+    "inprogress": "node server/query-completed.js --status 'In Progress'",
+    "all": "node server/query-completed.js --status all",
+    "help": "node server/query-completed.js --help"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
