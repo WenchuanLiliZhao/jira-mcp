@@ -2,10 +2,21 @@
 
 Use this command when the user asks about tasks, issues, bugs, priorities, or anything related to the project backlog.
 
-## Context
+## Active Project
 
-- Jira project: **YOUR_PROJECT** (replace with your project key, e.g. `PROJ`)
-- MCP tools available: `list_projects`, `list_issues`, `get_issue`, `search_issues`, `get_my_issues`, `list_sprints`, `get_sprint_issues`
+Before any project-scoped query (`list_issues`, `list_sprints`, `search_issues`, etc.), call
+`get_active_project` to read the current project key and board ID. Use the returned values in
+all JQL and tool calls.
+
+- If `get_active_project` returns `{ "project": null }`, ask the user which project they want,
+  then call `set_active_project` to save it before proceeding.
+- If the user says "switch to X" or "use project X", call `set_active_project` with the new
+  key (look up board ID via `list_sprints` if needed), then confirm the switch.
+
+## Available Tools
+
+`list_projects`, `list_issues`, `get_issue`, `search_issues`, `get_my_issues`, `list_sprints`,
+`get_sprint_issues`, `get_active_project`, `set_active_project`
 
 ---
 
@@ -77,27 +88,29 @@ These tools return **summaries only** — no description, no comments, no attach
 
 When presenting any list of issues (from any tool), **always include a clickable link** for each issue.
 
-- **Link format:** `https://<JIRA_DOMAIN>/browse/<issue-key>`
-- **Get JIRA_DOMAIN:** Read from `server/secrets.json` (field `JIRA_DOMAIN`). If not available, omit links but mention this to the user.
+- **Link format:** `https://<domain>/browse/<issue-key>`
+- **Get `domain`:** It is returned by `get_active_project` (field `domain`). Never read files to obtain it.
 - **Markdown:** Use `[KEY](https://<domain>/browse/KEY)` or a table column with links for easy clicking.
 
 ---
 
 ## Common JQL Examples
 
+Replace `<project>` with the key returned by `get_active_project`.
+
 ```
 # In Progress tasks
-project = YOUR_PROJECT AND status = "In Progress"
+project = <project> AND status = "In Progress"
 
 # High priority issues
-project = YOUR_PROJECT AND priority in (Highest, High) ORDER BY updated DESC
+project = <project> AND priority in (Highest, High) ORDER BY updated DESC
 
 # Recently updated
-project = YOUR_PROJECT ORDER BY updated DESC
+project = <project> ORDER BY updated DESC
 
 # Unassigned issues
-project = YOUR_PROJECT AND assignee is EMPTY
+project = <project> AND assignee is EMPTY
 
 # Issues in active sprint
-project = YOUR_PROJECT AND sprint in openSprints()
+project = <project> AND sprint in openSprints()
 ```

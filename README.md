@@ -31,6 +31,8 @@ For scripting or terminal use, a CLI query script is also included.
 | `get_my_issues` | ✅ | Issues currently assigned to the authenticated user |
 | `list_sprints` | ✅ | List sprints for a project (active / future / closed) |
 | `get_sprint_issues` | ✅ | All issues inside a specific sprint |
+| `get_active_project` | ✅ | Read the currently active project key and board from local state |
+| `set_active_project` | ✅ | Switch the active project (persisted to `state.json`); used by the AI on "switch to X" requests |
 | Create / update issue | 🔲 | Create new issues or update existing fields from the IDE |
 | Add comment | 🔲 | Post a comment to an issue from the IDE |
 | Transition issue | 🔲 | Move an issue to a new status (e.g. In Progress → Done) |
@@ -73,7 +75,7 @@ For scripting or terminal use, a CLI query script is also included.
 | `/jira/query` command | ✅ | Cursor AI rule telling the AI when and how to use each Jira tool |
 | Project-specific config gitignored | ✅ | `secrets.json` and `query.md` are local-only; `.example` files are committed for reference |
 | Guided token generation link | ✅ | `/install` links directly to Atlassian API token page |
-| Multi-project support | 🔲 | Switch between projects without re-running `/install` |
+| Multi-project support | ✅ | `set_active_project` / `get_active_project` tools; switch by asking the AI |
 | Auto-refresh on token expiry | 🔲 | Detect 401 and prompt for a new token |
 
 ---

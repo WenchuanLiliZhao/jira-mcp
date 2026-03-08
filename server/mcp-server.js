@@ -37,7 +37,7 @@
  * REQUIRES Node.js 18+ (built-in fetch)
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -66,6 +66,20 @@ function loadSecrets() {
   };
 }
 const { JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN } = loadSecrets();
+
+// ── Active-project state ──────────────────────────────────────────────────────
+// Loaded from state.json on startup; also re-read on each get_active_project call
+// so changes made via set_active_project are reflected immediately.
+function loadState() {
+  const dir = dirname(fileURLToPath(import.meta.url));
+  const statePath = join(dir, 'state.json');
+  if (!existsSync(statePath)) return { project: null, boardId: null, boardName: null };
+  try {
+    return JSON.parse(readFileSync(statePath, 'utf8'));
+  } catch {
+    return { project: null, boardId: null, boardName: null };
+  }
+}
 if (!JIRA_DOMAIN || !JIRA_EMAIL || !JIRA_TOKEN) {
   process.stderr.write('Jira MCP: Missing credentials. Create secrets.json or set JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN in env.\n');
   process.exit(1);
@@ -423,6 +437,24 @@ const TOOLS = [
       required: ['sprint_id'],
     },
   },
+  {
+    name: 'get_active_project',
+    description: 'Returns the currently active Jira project key and board from local state. Call this before any project-scoped query when the user has not specified a project explicitly.',
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'set_active_project',
+    description: 'Sets the active Jira project (and optional board) so future queries default to it. Use when the user asks to switch projects.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project:   { type: 'string', description: 'Jira project key, e.g. ENG' },
+        boardId:   { type: 'number', description: 'Board ID for sprint support (optional)' },
+        boardName: { type: 'string', description: 'Board display name (optional)' },
+      },
+      required: ['project'],
+    },
+  },
 ];
 
 // ── MCP Server setup ──────────────────────────────────────────────────────────
@@ -476,6 +508,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     } else if (name === 'get_sprint_issues') {
       result = await fetchSprintIssues(args.sprint_id, args.max_results ?? 50);
+
+    } else if (name === 'get_active_project') {
+      result = { ...loadState(), domain: JIRA_DOMAIN };
+
+    } else if (name === 'set_active_project') {
+      const { project, boardId = null, boardName = null } = args;
+      const state = { project, boardId, boardName };
+      const statePath = join(dirname(fileURLToPath(import.meta.url)), 'state.json');
+      writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n');
+      result = { ok: true, active: state };
 
     } else {
       throw new Error(`Unknown tool: ${name}`);

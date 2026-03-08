@@ -102,19 +102,24 @@ Once all answers are collected, perform ALL of the following:
 }
 ```
 
-2. **Write `.cursor/commands/jira/query.md`** by copying `.cursor/commands/jira/query.md.example`
-   and replacing every occurrence of `YOUR_PROJECT` with `PROJECT_KEY`, and adding the board
-   context line if a board was selected:
-   - `- Board: **BOARD_NAME** (ID: BOARD_ID)`
+2. **Write `server/state.json`** with:
+```json
+{
+  "project": "<PROJECT_KEY>",
+  "boardId": <BOARD_ID or null>,
+  "boardName": "<BOARD_NAME or null>"
+}
+```
 
 3. **Confirm to the user**:
 > "Setup complete! Here's what was configured:
 > - Domain: JIRA_DOMAIN
 > - Email: JIRA_EMAIL
-> - Project: PROJECT_KEY
+> - Active project: PROJECT_KEY
 > - Board: BOARD_NAME (ID: BOARD_ID) — or 'none' if skipped
 >
-> You can now ask me anything about your Jira tasks directly."
+> You can now ask me anything about your Jira tasks. To switch projects later, just say
+> 'switch to project X' — no need to re-run /install."
 
 ---
 
