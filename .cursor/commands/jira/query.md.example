@@ -68,8 +68,18 @@ These tools return **summaries only** — no description, no comments, no attach
 
 1. **Identify intent** — what is the user trying to find out?
 2. **Choose the right tool** using the reference above
-3. **Present results clearly** — summarize key fields: key, summary, status, assignee, priority
+3. **Present results clearly** — summarize key fields: key, summary, status, assignee, priority; **include a clickable link for each issue**
 4. **Offer next steps** — suggest follow-up queries or related issues if relevant
+
+---
+
+## Including Links
+
+When presenting any list of issues (from any tool), **always include a clickable link** for each issue.
+
+- **Link format:** `https://<JIRA_DOMAIN>/browse/<issue-key>`
+- **Get JIRA_DOMAIN:** Read from `server/secrets.json` (field `JIRA_DOMAIN`). If not available, omit links but mention this to the user.
+- **Markdown:** Use `[KEY](https://<domain>/browse/KEY)` or a table column with links for easy clicking.
 
 ---
 
