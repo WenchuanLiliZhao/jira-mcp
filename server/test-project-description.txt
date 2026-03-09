@@ -1,0 +1,70 @@
+# TEST — Jira MCP 测试项目
+
+本项目用于测试 [Jira MCP](https://github.com/jira-mcp) 服务器与 Cursor AI 的集成。AI 在查询此项目时，应遵循以下规范。
+
+---
+
+## 项目用途
+
+- 沙盒环境：用于验证 MCP 工具、批量脚本、工作流
+- AI 集成测试：验证 list_issues、get_issue、search_issues 等工具行为
+- 开发与演示：无需影响生产数据即可演练 Jira 操作
+
+---
+
+## 工具选择指南（面向 AI）
+
+### 何时用 get_issue
+当用户询问以下任一内容时，必须调用 get_issue：
+- 描述、详情
+- 评论（谁说了什么）
+- 附件
+- 所属 Sprint
+- 工时 / Story Points
+- 子任务或关联 issue
+- 解决状态
+
+### 何时用 list_issues / search_issues / get_my_issues
+当用户只需要：
+- 带基本信息的 issue 列表
+- 按状态、经办人、标签等筛选
+
+注意：list_issues、search_issues、get_my_issues 不包含描述和评论，需要详情时务必调用 get_issue。
+
+---
+
+## 常用 JQL（project = TEST）
+
+```
+# 进行中
+project = TEST AND status = "In Progress"
+
+# 高优先级
+project = TEST AND priority in (Highest, High) ORDER BY updated DESC
+
+# 最近更新
+project = TEST ORDER BY updated DESC
+
+# 未分配
+project = TEST AND assignee is EMPTY
+
+# 活跃 Sprint
+project = TEST AND sprint in openSprints()
+```
+
+---
+
+## 返回格式要求
+
+- 每个 issue 必须附带可点击链接：https://<domain>/browse/<KEY>
+- domain 从 get_active_project 的 domain 字段获取
+- Markdown 示例：[KEY](https://<domain>/browse/KEY)
+
+---
+
+## 工作流
+
+1. 识别意图：用户想了解什么？
+2. 选择工具：根据上文选择 get_issue 或 list/search 类工具
+3. 清晰呈现：汇总 key、summary、status、assignee、priority，并附链接
+4. 建议后续：可提示相关查询或相关 issue

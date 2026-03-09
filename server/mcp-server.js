@@ -345,6 +345,107 @@ async function fetchSprintIssues(sprintId, maxResults = 50) {
   return (data?.issues ?? []).map(formatIssueSummary);
 }
 
+// ── Bulk move ──────────────────────────────────────────────────────────────────
+
+/**
+ * Fetches project details including issue types (id, name).
+ *
+ * @param {string} projectKey - Jira project key
+ * @returns {Promise<{ id, key, name, issueTypes: { id, name }[] }>}
+ */
+async function fetchProjectWithIssueTypes(projectKey) {
+  const data = await jiraFetch(`/rest/api/3/project/${encodeURIComponent(projectKey)}`);
+  return {
+    id:   data.id,
+    key:  data.key,
+    name: data.name,
+    issueTypes: (data.issueTypes ?? []).map((it) => ({ id: it.id, name: it.name })),
+  };
+}
+
+/**
+ * Runs a bulk move of issues from one project to another.
+ * Uses POST /rest/api/3/bulk/issues/move (async), then polls until complete.
+ *
+ * @param {string} sourceProject - Source project key
+ * @param {string} targetProject - Target project key
+ * @param {string} jql           - JQL to select issues (default: all Epic + Task in source)
+ * @returns {Promise<object>} Result with status, moved count, errors
+ */
+async function bulkMoveIssues(sourceProject, targetProject, jql) {
+  const resolvedJql = jql ?? `project = ${sourceProject} AND issuetype in (Epic, Task) ORDER BY key ASC`;
+  const issues = await fetchIssuesByJQL(resolvedJql, 1000);
+  if (issues.length === 0) {
+    return { ok: true, moved: 0, message: 'No issues to move' };
+  }
+
+  const targetProjectData = await fetchProjectWithIssueTypes(targetProject);
+  const typeByName = Object.fromEntries(
+    targetProjectData.issueTypes.map((it) => [it.name, it.id])
+  );
+
+  const byType = {};
+  for (const issue of issues) {
+    const typeName = issue.issuetype;
+    if (!typeByName[typeName]) {
+      throw new Error(
+        `Target project ${targetProject} has no issue type "${typeName}". ` +
+        `Available: ${targetProjectData.issueTypes.map((it) => it.name).join(', ')}`
+      );
+    }
+    if (!byType[typeName]) byType[typeName] = [];
+    byType[typeName].push(issue.key);
+  }
+
+  const targetToSourcesMapping = {};
+  for (const [typeName, keys] of Object.entries(byType)) {
+    const targetKey = `${targetProject},${typeByName[typeName]}`;
+    targetToSourcesMapping[targetKey] = {
+      issueIdsOrKeys: keys,
+      inferFieldDefaults: true,
+      inferStatusDefaults: true,
+      inferClassificationDefaults: true,
+      inferSubtaskTypeDefault: true,
+    };
+  }
+
+  const movePayload = {
+    sendBulkNotification: true,
+    targetToSourcesMapping,
+  };
+
+  const moveRes = await jiraFetch('/rest/api/3/bulk/issues/move', {
+    method: 'POST',
+    body: JSON.stringify(movePayload),
+  });
+
+  const taskId = moveRes?.taskId;
+  if (!taskId) throw new Error('Bulk move did not return taskId');
+
+  const maxAttempts = 60;
+  const pollIntervalMs = 2000;
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, pollIntervalMs));
+    const progress = await jiraFetch(`/rest/api/3/bulk/queue/${taskId}`);
+    const status = progress?.status ?? '';
+    if (status === 'COMPLETE') {
+      return {
+        ok: true,
+        moved: progress.totalIssueCount ?? issues.length,
+        taskId,
+        progressPercent: progress.progressPercent,
+        invalidOrInaccessibleIssueCount: progress.invalidOrInaccessibleIssueCount ?? 0,
+      };
+    }
+    if (status === 'FAILED' || status === 'CANCELED') {
+      throw new Error(
+        `Bulk move ${status}: ${progress?.message ?? JSON.stringify(progress)}`
+      );
+    }
+  }
+  throw new Error(`Bulk move timed out after ${maxAttempts} polls`);
+}
+
 // ── Tool definitions ──────────────────────────────────────────────────────────
 /**
  * MCP tool schema definitions.
@@ -455,6 +556,19 @@ const TOOLS = [
       required: ['project'],
     },
   },
+  {
+    name: 'bulk_move_issues',
+    description: 'Move multiple issues from one project to another. Uses Jira bulk move API. Specify source_project, target_project, and optional jql to filter issues.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source_project: { type: 'string', description: 'Source project key, e.g. JM' },
+        target_project: { type: 'string', description: 'Target project key, e.g. TEST' },
+        jql:            { type: 'string', description: 'Optional JQL to select issues. Default: all Epic and Task in source project.' },
+      },
+      required: ['source_project', 'target_project'],
+    },
+  },
 ];
 
 // ── MCP Server setup ──────────────────────────────────────────────────────────
@@ -518,6 +632,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const statePath = join(dirname(fileURLToPath(import.meta.url)), 'state.json');
       writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n');
       result = { ok: true, active: state };
+
+    } else if (name === 'bulk_move_issues') {
+      const { source_project, target_project, jql } = args;
+      result = await bulkMoveIssues(source_project, target_project, jql);
 
     } else {
       throw new Error(`Unknown tool: ${name}`);

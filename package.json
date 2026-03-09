@@ -11,7 +11,11 @@
     "todo": "node server/query-completed.js --status 'To Do'",
     "inprogress": "node server/query-completed.js --status 'In Progress'",
     "all": "node server/query-completed.js --status all",
-    "help": "node server/query-completed.js --help"
+    "help": "node server/query-completed.js --help",
+    "move": "node server/bulk-move.js",
+    "assign": "node server/bulk-assign.js",
+    "set-epic-link": "node server/set-epic-link.js",
+    "set-project-description": "node server/set-project-description.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
