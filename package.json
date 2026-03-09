@@ -15,7 +15,8 @@
     "move": "node server/bulk-move.js",
     "assign": "node server/bulk-assign.js",
     "set-epic-link": "node server/set-epic-link.js",
-    "set-project-description": "node server/set-project-description.js"
+    "set-project-description": "node server/set-project-description.js",
+    "transition": "node server/bulk-transition.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"

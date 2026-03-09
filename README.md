@@ -71,6 +71,7 @@ For scripting or terminal use, a CLI query script is also included.
 | `npm run assign -- --project PROJ` | Assign all issues in a project to yourself |
 | `npm run assign -- --project PROJ --jql "..."` | Assign filtered issues to yourself |
 | `npm run set-epic-link -- --epic EPIC --issue KEY` | Link one or more issues to an epic |
+| `npm run transition -- --to STATUS --jql "..."` | Transition issues to a target status |
 
 ### Setup & AI Guidance
 

@@ -12,7 +12,9 @@ This directory contains the MCP server (`mcp-server.js`) and a set of standalone
 | `bulk-move.js` | `npm run move` | Move issues from one project to another |
 | `bulk-assign.js` | `npm run assign` | Assign issues in a project to yourself |
 | `set-epic-link.js` | `npm run set-epic-link` | Set the parent epic on one or more issues |
+| `bulk-transition.js` | `npm run transition` | Transition issues to a target status |
 | `set-project-description.js` | `npm run set-project-description` | Set a project's description |
+| `bulk-transition.js` | `npm run transition` | Transition issues to a target status (e.g. Done) |
 
 ---
 
