@@ -33,11 +33,11 @@ For scripting or terminal use, a CLI query script is also included.
 | `get_sprint_issues` | ✅ | All issues inside a specific sprint |
 | `get_active_project` | ✅ | Read the currently active project key and board from local state |
 | `set_active_project` | ✅ | Switch the active project (persisted to `state.json`); used by the AI on "switch to X" requests |
-| `create_issue` | ✅ | Create a new issue (summary, type, description, assignee, priority, labels, parent, story points) |
-| `update_issue` | ✅ | Update any field on an existing issue; only provided fields are changed |
+| `create_issue` | ✅ | Create a new issue (summary, type, description, assignee, priority, labels, parent, story points); description accepts Markdown |
+| `update_issue` | ✅ | Update any field on an existing issue; only provided fields are changed; description accepts Markdown |
 | Add comment | 🔲 | Post a comment to an issue from the IDE |
 | `get_transitions` | ✅ | List available workflow transitions for an issue, including custom statuses (use before transition_issue) |
-| `transition_issue` | ✅ | Move an issue to a new status (e.g. In Progress → Done); supports custom statuses (e.g. Testing) with optional comment |
+| `transition_issue` | ✅ | Move an issue to a new status (e.g. In Progress → Done); supports custom statuses (e.g. Testing) with optional Markdown comment |
 | `assign_issue` | ✅ | Assign or reassign an issue to a user (or unassign by passing null) |
 | `search_users` | ✅ | Look up team members by name or email; returns accountId for use with assign/create |
 | Attachment download | 🔲 | Fetch attachment content (not just metadata) |
@@ -46,7 +46,7 @@ For scripting or terminal use, a CLI query script is also included.
 
 | Field | Description |
 |-------|-------------|
-| `description` | Full issue description (plain text, converted from Atlassian Document Format) |
+| `description` | Full issue description (plain text, converted from Atlassian Document Format); Markdown is rendered when writing |
 | `comments` | `[{ author, created, body }]` — who said what and when |
 | `sprint` | `{ id, name, state, startDate, endDate }` or `null` |
 | `story_points` | Numeric estimate or `null` |
@@ -115,6 +115,7 @@ See [INSTALLATION.md](INSTALLATION.md) for full setup details and troubleshootin
 - Node.js 18+
 - Cursor IDE (any version with MCP support)
 - Jira Cloud account with API token
+- npm packages installed (`npm install`) — required for Markdown → ADF conversion (`md-to-adf`)
 
 ---
 

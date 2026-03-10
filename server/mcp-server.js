@@ -46,6 +46,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import markdownToAdf from 'md-to-adf';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -833,10 +834,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         issuetype: { name: issuetype },
       };
       if (description) {
-        fields.description = {
-          type: 'doc', version: 1,
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: description }] }],
-        };
+        fields.description = markdownToAdf(description);
       }
       if (assignee !== undefined) fields.assignee = assignee ? { accountId: assignee } : null;
       if (priority)      fields.priority = { name: priority };
@@ -867,10 +865,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         fields.issuetype = { id: match.id };
       }
       if (description !== undefined) {
-        fields.description = {
-          type: 'doc', version: 1,
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: description }] }],
-        };
+        fields.description = markdownToAdf(description);
       }
       if (assignee !== undefined) fields.assignee = assignee ? { accountId: assignee } : null;
       if (priority !== undefined)  fields.priority = { name: priority };
@@ -892,10 +887,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const payload = { transition: { id: transition_id } };
       if (comment) {
         payload.update = {
-          comment: [{ add: { body: {
-            type: 'doc', version: 1,
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: comment }] }],
-          } } }],
+          comment: [{ add: { body: markdownToAdf(comment) } }],
         };
       }
       await jiraFetch(`/rest/api/3/issue/${key}/transitions`, {

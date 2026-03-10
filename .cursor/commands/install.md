@@ -9,6 +9,16 @@ choices or yes/no decisions. For free-form inputs (domain, email, token) ask in 
 
 ## Steps
 
+### Step 0 — Install npm dependencies
+
+Run `npm install` in the project root (the directory containing `package.json`).
+This installs the `md-to-adf` package required for Markdown rendering in Jira descriptions.
+
+If the command fails, tell the user the error and ask them to resolve it before proceeding.
+Once it succeeds, confirm: "Dependencies installed." and move on.
+
+---
+
 ### Step 1 — Jira Domain
 
 Ask:

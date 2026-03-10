@@ -19,7 +19,8 @@
     "transition": "node server/bulk-transition.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "md-to-adf": "^0.6.4"
   },
   "engines": {
     "node": ">=18"
