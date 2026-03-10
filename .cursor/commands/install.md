@@ -40,56 +40,19 @@ Save as `JIRA_TOKEN`.
 
 ---
 
-### Step 4 — Project Key
+### Step 4 — Verify credentials
 
-Call the `list_projects` MCP tool using the credentials collected above to fetch the user's
-accessible projects. Then use the `ask_question` tool to present the choices:
+Call the `list_projects` MCP tool to verify the credentials work. If the call succeeds, briefly
+confirm: "Credentials verified — I can see your Jira projects."
 
-```
-question: "Which project would you like to use as your default?"
-options: one option per project, label = "<KEY> — <name>"
-allow_multiple: false
-```
+If the call fails, tell the user the error and offer to re-enter the domain, email, or token.
 
-If `list_projects` fails, fall back to asking in plain text:
-> "Could not fetch projects automatically. What is your default Jira project key? (e.g. `PROJ`)"
-
-Save as `PROJECT_KEY`.
+Set `PROJECT_KEY`, `BOARD_ID`, and `BOARD_NAME` all to `null`. The user will pick a project
+naturally the first time they query Jira — no need to choose one now.
 
 ---
 
-### Step 5 — Board (optional, for sprint support)
-
-Call the `list_sprints` MCP tool with `project: PROJECT_KEY`.
-
-If boards are found, use the `ask_question` tool with two questions in a single call:
-
-```
-question 1: "Which board should be used for sprint queries?"
-  options: one option per board, label = "<ID> — <name>", plus "Skip — no sprint support"
-  allow_multiple: false
-
-question 2: "Would you like to enable sprint support?"  ← only if above is not skipped
-  options: ["Yes", "No"]
-  allow_multiple: false
-```
-
-If no boards are found, use the `ask_question` tool:
-```
-question: "No boards were found for this project. How would you like to proceed?"
-options:
-  - "Continue without sprint support"
-  - "Enter board ID manually"
-allow_multiple: false
-```
-
-If skipped or no board selected, set `BOARD_ID` and `BOARD_NAME` to null.
-
-Save as `BOARD_ID` and `BOARD_NAME`.
-
----
-
-### Step 6 — Write config files
+### Step 5 — Write config files
 
 Once all answers are collected, perform ALL of the following:
 
@@ -102,24 +65,14 @@ Once all answers are collected, perform ALL of the following:
 }
 ```
 
-2. **Write `server/state.json`** with:
-```json
-{
-  "project": "<PROJECT_KEY>",
-  "boardId": <BOARD_ID or null>,
-  "boardName": "<BOARD_NAME or null>"
-}
-```
-
-3. **Confirm to the user**:
+2. **Confirm to the user**:
 > "Setup complete! Here's what was configured:
 > - Domain: JIRA_DOMAIN
 > - Email: JIRA_EMAIL
-> - Active project: PROJECT_KEY
-> - Board: BOARD_NAME (ID: BOARD_ID) — or 'none' if skipped
 >
-> You can now ask me anything about your Jira tasks. To switch projects later, just say
-> 'switch to project X' — no need to re-run /install."
+> You can now ask me anything about your Jira tasks.
+> The first time you query, I'll ask which project you want to work with.
+> To switch projects later, just say 'switch to project X'."
 
 ---
 
@@ -132,6 +85,6 @@ Once all answers are collected, perform ALL of the following:
   Example: "Got it — domain is `acme.atlassian.net`. Next..."
 - Never show the full API token back to the user after it's entered (treat it as a secret).
 - If the user makes a mistake or wants to change an answer, allow them to correct it before writing files.
-- Only write files in **Step 6**, after all answers are confirmed.
-- Do not ask the user to restart Cursor — remind them only if the MCP server path in
-  `~/.cursor/mcp.json` still points to an old location.
+- Only write files in **Step 5**, after all answers are confirmed.
+- Do not ask the user to restart Cursor. Credentials are loaded dynamically — changes to
+  `secrets.json` take effect on the next MCP tool call without a restart.

@@ -54,7 +54,7 @@ Fully quit and reopen Cursor, then open a new chat in **Agent mode** and run:
 /install
 ```
 
-The AI will guide you through the rest — collecting your Jira credentials, selecting your project and board, and writing all config files automatically.
+The AI will guide you through the rest — collecting your Jira credentials, verifying API access, and writing `secrets.json`. The first time you ask a Jira question, it will prompt you to choose a project.
 
 ---
 
@@ -99,7 +99,7 @@ Your credentials are incorrect. Double-check:
 - `JIRA_EMAIL` — must match your Atlassian account exactly
 - `JIRA_TOKEN` — copied in full, with no extra whitespace
 
-Re-run `/install` to overwrite `server/secrets.json` with corrected values.
+Re-run `/install` to overwrite `server/secrets.json` with corrected values. Credentials are reloaded on every request — no Cursor restart needed.
 
 ### Tools not appearing in Cursor
 - Make sure `mcp.json` uses valid JSON (no trailing commas)

@@ -48,8 +48,9 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 // ── Credentials ──────────────────────────────────────────────────────────────
-// Load from secrets.json (project-local) or env vars. See INSTALLATION.md.
-// Priority: process.env > secrets.json
+// Re-read from secrets.json on every request so that credential changes (e.g.
+// switching Jira accounts via /install) take effect immediately — no Cursor
+// restart required.  Priority: process.env > secrets.json
 function loadSecrets() {
   const dir = dirname(fileURLToPath(import.meta.url));
   const secretsPath = join(dir, 'secrets.json');
@@ -65,11 +66,10 @@ function loadSecrets() {
     JIRA_TOKEN:  process.env.JIRA_TOKEN  || secrets.JIRA_TOKEN,
   };
 }
-const { JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN } = loadSecrets();
 
 // ── Active-project state ──────────────────────────────────────────────────────
-// Loaded from state.json on startup; also re-read on each get_active_project call
-// so changes made via set_active_project are reflected immediately.
+// Re-read on each call so changes made via set_active_project are reflected
+// immediately.
 function loadState() {
   const dir = dirname(fileURLToPath(import.meta.url));
   const statePath = join(dir, 'state.json');
@@ -80,19 +80,21 @@ function loadState() {
     return { project: null, boardId: null, boardName: null };
   }
 }
-if (!JIRA_DOMAIN || !JIRA_EMAIL || !JIRA_TOKEN) {
-  process.stderr.write('Jira MCP: Missing credentials. Create secrets.json or set JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN in env.\n');
-  process.exit(1);
+
+// Validate on startup so the process fails fast if secrets.json is completely missing.
+{
+  const { JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN } = loadSecrets();
+  if (!JIRA_DOMAIN || !JIRA_EMAIL || !JIRA_TOKEN) {
+    process.stderr.write('Jira MCP: Missing credentials. Create secrets.json or set JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN in env.\n');
+    process.exit(1);
+  }
 }
 // ─────────────────────────────────────────────────────────────────────────────
-
-const JIRA_BASE = `https://${JIRA_DOMAIN}`;
-// HTTP Basic Auth: base64("email:token") — standard Jira Cloud auth method
-const AUTH = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
 
 // ── Jira API helper ───────────────────────────────────────────────────────────
 /**
  * Authenticated fetch wrapper for Jira REST APIs (both v3 and Agile v1).
+ * Re-reads credentials on every call so account switches take effect immediately.
  *
  * @param {string} path  - API path, e.g. "/rest/api/3/project"
  * @param {object} opts  - fetch options (method, body, etc.)
@@ -100,18 +102,24 @@ const AUTH = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
  * @throws {Error} With Jira's human-readable error message on non-2xx responses
  */
 async function jiraFetch(path, opts = {}) {
-  const res = await fetch(`${JIRA_BASE}${path}`, {
+  const { JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN } = loadSecrets();
+  if (!JIRA_DOMAIN || !JIRA_EMAIL || !JIRA_TOKEN) {
+    throw new Error('Missing Jira credentials. Run /install to configure.');
+  }
+  const base = `https://${JIRA_DOMAIN}`;
+  const auth = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
+
+  const res = await fetch(`${base}${path}`, {
     ...opts,
     headers: {
       Accept: 'application/json',
-      Authorization: `Basic ${AUTH}`,
+      Authorization: `Basic ${auth}`,
       'Content-Type': 'application/json',
       ...opts.headers,
     },
   });
   const text = await res.text();
   if (!res.ok) {
-    // Jira errors come as JSON with `errorMessages` array or `message` string
     let msg = `HTTP ${res.status}`;
     try { msg = JSON.parse(text).errorMessages?.[0] || JSON.parse(text).message || text; } catch {}
     throw new Error(msg);
@@ -624,7 +632,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = await fetchSprintIssues(args.sprint_id, args.max_results ?? 50);
 
     } else if (name === 'get_active_project') {
-      result = { ...loadState(), domain: JIRA_DOMAIN };
+      result = { ...loadState(), domain: loadSecrets().JIRA_DOMAIN };
 
     } else if (name === 'set_active_project') {
       const { project, boardId = null, boardName = null } = args;

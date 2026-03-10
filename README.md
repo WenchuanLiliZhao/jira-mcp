@@ -77,11 +77,12 @@ For scripting or terminal use, a CLI query script is also included.
 
 | Feature | Status | Description |
 |---------|:------:|-------------|
-| Interactive `/install` command | ✅ | AI-guided setup: collects credentials, lists projects/boards via API, writes config files |
+| Interactive `/install` command | ✅ | AI-guided setup: collects credentials, verifies API access, writes `secrets.json` |
 | `/jira/query` command | ✅ | Cursor AI rule telling the AI when and how to use each Jira tool |
-| Project-specific config gitignored | ✅ | `secrets.json` and `query.md` are local-only; `.example` files are committed for reference |
+| Project-specific config gitignored | ✅ | `secrets.json`, `state.json`, and `query.md` are local-only; `.example` files are committed for reference |
 | Guided token generation link | ✅ | `/install` links directly to Atlassian API token page |
 | Multi-project support | ✅ | `set_active_project` / `get_active_project` tools; switch by asking the AI |
+| Hot-reload credentials | ✅ | Credentials are re-read on every request — switch accounts via `/install` without restarting Cursor |
 | Auto-refresh on token expiry | 🔲 | Detect 401 and prompt for a new token |
 
 ---

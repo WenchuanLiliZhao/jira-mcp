@@ -1,0 +1,50 @@
+---
+description: Enforces product-level granularity when creating or proposing Jira tasks, stories, and epics. Prevents over-splitting into technical micro-tasks.
+alwaysApply: true
+---
+
+# Task & Epic Creation — Granularity Rules
+
+When the user asks you to create, plan, or propose Jira tasks, stories, or epics, follow these rules strictly.
+
+## Task sizing
+
+- A single task (Story / Task) should represent **one deliverable unit of work taking 1–3 days** for one person.
+- A task includes ALL technical work needed to ship that unit: database changes, backend, frontend, tests, and documentation. Do NOT split these into separate tasks.
+- If a task feels larger than 3 days, split it by **user-visible outcome**, not by technical layer.
+
+## Epic sizing
+
+- An epic represents a **user-facing feature or business capability** deliverable in 1–4 weeks.
+- Do NOT create separate epics per technical layer (e.g., "Backend epic", "Frontend epic", "Database epic"). One feature = one epic.
+
+## Confirmation gate
+
+- **Always** present the proposed breakdown as a table (title, type, rough estimate) and **wait for user approval** before creating any issues.
+- Do not batch-create more than **8 tasks** per epic without explicit confirmation.
+
+## Anti-patterns — do NOT create tasks like these
+
+- "Create database migration for users table"
+- "Add POST /api/users endpoint"
+- "Build UserForm React component"
+- "Write unit tests for user service"
+- "Add input validation to registration form"
+- "Set up CI pipeline for user module"
+
+These are implementation steps inside a single task, not separate tasks.
+
+## Good examples
+
+| Bad (too granular) | Good (right level) |
+|-|-|
+| 5 tasks: migration, endpoint, component, validation, tests | 1 task: "User registration with email and password" |
+| 3 tasks: search API, search UI, search filters | 1 task: "Product search with filters" |
+| 4 tasks: schema, resolver, query hook, display component | 1 task: "Dashboard activity feed" |
+| 2 tasks: export endpoint, download button | 1 task: "CSV export for transaction history" |
+
+## When in doubt
+
+- Prefer **fewer, larger** tasks over many small ones.
+- Ask yourself: "Would a PM write this as a ticket?" If not, it is too technical.
+- Frame titles from the **user's perspective**, not the developer's.
