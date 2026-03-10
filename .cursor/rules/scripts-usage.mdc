@@ -1,0 +1,37 @@
+---
+description: Governs when one-off scripts are allowed and requires cleanup after use.
+alwaysApply: true
+---
+
+# One-off Scripts — Usage & Cleanup Policy
+
+## When a script is appropriate
+
+Writing a one-off script to `scripts/` is acceptable when an MCP tool call is not practical:
+
+- **Large payload**: The content to send is too large to inline safely as a tool argument (e.g. a full Confluence page body with tables, thousands of characters of HTML).
+- **Multi-step atomic operation**: The task requires chaining API calls (e.g. GET current version → transform → PUT) that are safer and more transparent as a single executable file.
+- **Bulk / batch operation**: The task touches many records (e.g. migrate 50 issues, update 20 pages) and a loop with logging is clearer than repeated tool calls.
+- **Transformation + write**: The content requires non-trivial processing (parsing, reformatting, translating) before writing back to an external system.
+
+## When a script is NOT appropriate
+
+Do NOT write a script if a single MCP tool call can do the job cleanly. Prefer tools for:
+
+- Reading data (always use tools)
+- Simple single-record writes with small payloads
+- Anything that fits comfortably in a tool argument
+
+## Naming & placement
+
+- Place all one-off scripts in `scripts/` with a descriptive name, e.g. `migrate-issues-to-new-project.mjs`.
+- Use the `.mjs` extension (ES modules, consistent with the rest of the project).
+
+## Cleanup — mandatory
+
+One-off scripts are **temporary**. After the script has been run successfully:
+
+1. Delete the script file immediately.
+2. Do not commit it to git.
+
+If the script may be reused, note it explicitly to the user; otherwise delete it.

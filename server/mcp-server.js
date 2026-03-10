@@ -127,6 +127,40 @@ async function jiraFetch(path, opts = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+// ── Confluence API helper ─────────────────────────────────────────────────────
+/**
+ * Authenticated fetch wrapper for Confluence REST API v2.
+ * Uses the same credentials as jiraFetch — Atlassian tokens are account-scoped.
+ *
+ * @param {string} path  - API path, e.g. "/api/v2/spaces"
+ * @param {object} opts  - fetch options (method, body, etc.)
+ * @returns {Promise<any>} Parsed JSON response body
+ */
+async function confluenceFetch(path, opts = {}) {
+  const { JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN } = loadSecrets();
+  if (!JIRA_DOMAIN || !JIRA_EMAIL || !JIRA_TOKEN) {
+    throw new Error('Missing credentials. Run /install to configure.');
+  }
+  const base = `https://${JIRA_DOMAIN}/wiki`;
+  const auth = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
+  const res = await fetch(`${base}${path}`, {
+    ...opts,
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+      ...opts.headers,
+    },
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try { msg = JSON.parse(text).message || text; } catch {}
+    throw new Error(msg);
+  }
+  return text ? JSON.parse(text) : null;
+}
+
 // ── Field constants ───────────────────────────────────────────────────────────
 
 /**
@@ -577,6 +611,64 @@ const TOOLS = [
       required: ['source_project', 'target_project'],
     },
   },
+  {
+    name: 'list_confluence_spaces',
+    description: 'List all Confluence spaces accessible to the current user. Returns space id, key, name, and type.',
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'search_confluence_pages',
+    description: 'Search Confluence pages. Optionally filter by space_id and/or title keyword. Returns page id, title, space, and URL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space_id: { type: 'string', description: 'Confluence space ID to search within (from list_confluence_spaces). Omit to search all spaces.' },
+        title:    { type: 'string', description: 'Page title keyword to filter by (exact or partial match).' },
+        limit:    { type: 'number', description: 'Max pages to return (default 25).' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_confluence_page',
+    description: 'Get the full content of a single Confluence page by its ID. Returns title, HTML body (storage format), version, and URL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page_id: { type: 'string', description: 'Confluence page ID (from search_confluence_pages).' },
+      },
+      required: ['page_id'],
+    },
+  },
+  {
+    name: 'create_confluence_page',
+    description: 'Create a new Confluence page in a given space. Body must be HTML in Confluence storage format.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        space_id:  { type: 'string', description: 'Numeric Confluence space ID — NOT the space key (e.g. not "CNTDS"). Get it from list_confluence_spaces (id field) or get_confluence_page (spaceId field).' },
+        title:     { type: 'string', description: 'Page title.' },
+        body:      { type: 'string', description: 'Page body in Confluence storage format (HTML-like markup).' },
+        parent_id: { type: 'string', description: 'Optional parent page ID. If omitted, page is created at the space root.' },
+      },
+      required: ['space_id', 'title', 'body'],
+    },
+  },
+  {
+    name: 'update_confluence_page',
+    description: 'Update the title and/or body of an existing Confluence page. Requires the current version number (from get_confluence_page) — Confluence uses optimistic locking.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page_id: { type: 'string', description: 'Confluence page ID to update.' },
+        title:   { type: 'string', description: 'New page title.' },
+        body:    { type: 'string', description: 'New page body in Confluence storage format (HTML-like markup).' },
+        version: { type: 'number', description: 'Current version number of the page (from get_confluence_page). The server will store version+1.' },
+        status:  { type: 'string', description: 'Page status after update: "current" (published, default) or "draft".' },
+      },
+      required: ['page_id', 'title', 'body', 'version'],
+    },
+  },
 ];
 
 // ── MCP Server setup ──────────────────────────────────────────────────────────
@@ -644,6 +736,75 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     } else if (name === 'bulk_move_issues') {
       const { source_project, target_project, jql } = args;
       result = await bulkMoveIssues(source_project, target_project, jql);
+
+    } else if (name === 'list_confluence_spaces') {
+      const data = await confluenceFetch('/api/v2/spaces?limit=50');
+      result = (data?.results ?? []).map((s) => ({
+        id: s.id, key: s.key, name: s.name, type: s.type,
+      }));
+
+    } else if (name === 'search_confluence_pages') {
+      const { space_id, title, limit = 25 } = args ?? {};
+      let url = `/api/v2/pages?limit=${limit}`;
+      if (space_id) url += `&space-id=${space_id}`;
+      if (title)    url += `&title=${encodeURIComponent(title)}`;
+      const data = await confluenceFetch(url);
+      const { JIRA_DOMAIN } = loadSecrets();
+      result = (data?.results ?? []).map((p) => ({
+        id: p.id, title: p.title, spaceId: p.spaceId,
+        url: `https://${JIRA_DOMAIN}/wiki${p._links?.webui ?? ''}`,
+      }));
+
+    } else if (name === 'get_confluence_page') {
+      const data = await confluenceFetch(
+        `/api/v2/pages/${args.page_id}?body-format=storage`
+      );
+      const { JIRA_DOMAIN } = loadSecrets();
+      result = {
+        id: data.id, title: data.title, spaceId: data.spaceId,
+        body: data.body?.storage?.value ?? '',
+        url: `https://${JIRA_DOMAIN}/wiki${data._links?.webui ?? ''}`,
+        version: data.version?.number,
+      };
+
+    } else if (name === 'create_confluence_page') {
+      const { space_id, title, body, parent_id } = args;
+      const payload = {
+        spaceId: space_id,
+        title,
+        ...(parent_id ? { parentId: parent_id } : {}),
+        body: { storage: { value: body, representation: 'storage' } },
+      };
+      const data = await confluenceFetch('/api/v2/pages', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const { JIRA_DOMAIN } = loadSecrets();
+      result = {
+        id: data.id, title: data.title, spaceId: data.spaceId,
+        url: `https://${JIRA_DOMAIN}/wiki${data._links?.webui ?? ''}`,
+        version: data.version?.number,
+      };
+
+    } else if (name === 'update_confluence_page') {
+      const { page_id, title, body, version, status = 'current' } = args;
+      const payload = {
+        id: page_id,
+        title,
+        status,
+        version: { number: version + 1 },
+        body: { storage: { value: body, representation: 'storage' } },
+      };
+      const data = await confluenceFetch(`/api/v2/pages/${page_id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      const { JIRA_DOMAIN } = loadSecrets();
+      result = {
+        id: data.id, title: data.title,
+        url: `https://${JIRA_DOMAIN}/wiki${data._links?.webui ?? ''}`,
+        version: data.version?.number,
+      };
 
     } else {
       throw new Error(`Unknown tool: ${name}`);

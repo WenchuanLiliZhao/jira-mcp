@@ -78,8 +78,10 @@ For scripting or terminal use, a CLI query script is also included.
 | Feature | Status | Description |
 |---------|:------:|-------------|
 | Interactive `/install` command | ✅ | AI-guided setup: collects credentials, verifies API access, writes `secrets.json` |
-| `/jira/query` command | ✅ | Cursor AI rule telling the AI when and how to use each Jira tool |
-| Project-specific config gitignored | ✅ | `secrets.json`, `state.json`, and `query.md` are local-only; `.example` files are committed for reference |
+| `/queries/jira` command | ✅ | Cursor AI rule telling the AI when and how to use each Jira tool |
+| `/queries/confluence` command | ✅ | Cursor AI rule for querying Confluence spaces and pages |
+| `/queries/jira-create-issues` command | ✅ | Cursor AI rule for planning and creating Jira tasks and epics |
+| Project-specific config gitignored | ✅ | `secrets.json`, `state.json`, and `jira.md` are local-only; `.example` files are committed for reference |
 | Guided token generation link | ✅ | `/install` links directly to Atlassian API token page |
 | Multi-project support | ✅ | `set_active_project` / `get_active_project` tools; switch by asking the AI |
 | Hot-reload credentials | ✅ | Credentials are re-read on every request — switch accounts via `/install` without restarting Cursor |
