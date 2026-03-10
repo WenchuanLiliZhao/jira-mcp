@@ -23,13 +23,19 @@
  *   Credentials are loaded from secrets.json (same dir as mcp-server.js).
  *   Then restart Cursor to pick up the new server.
  *
- * AVAILABLE TOOLS (7 total)
+ * AVAILABLE TOOLS
  *   REST API v3 (core):
  *     list_projects    — all accessible Jira projects
  *     list_issues      — issues in a project, with optional JQL filter
  *     get_issue        — full detail for a single issue
  *     search_issues    — search with any custom JQL
  *     get_my_issues    — issues assigned to current user
+ *     create_issue     — create a new issue in a project
+ *     update_issue     — update fields on an existing issue
+ *     get_transitions  — list available workflow transitions for an issue
+ *     transition_issue — move an issue to a new status via a transition
+ *     assign_issue     — assign or unassign an issue
+ *     search_users     — look up users by name or email
  *   Agile API v1 (sprint):
  *     list_sprints     — sprints for a project (via board)
  *     get_sprint_issues — issues inside a specific sprint
@@ -599,6 +605,92 @@ const TOOLS = [
     },
   },
   {
+    name: 'create_issue',
+    description: 'Create a new Jira issue in the specified project.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project:     { type: 'string', description: 'Jira project key, e.g. PROJ' },
+        summary:     { type: 'string', description: 'Issue title / summary' },
+        issuetype:   { type: 'string', description: 'Issue type name, e.g. Task, Story, Bug, Epic' },
+        description: { type: 'string', description: 'Issue description in plain text' },
+        assignee:    { type: 'string', description: 'Assignee account ID (from get_user). Omit to leave unassigned.' },
+        priority:    { type: 'string', description: 'Priority name, e.g. High, Medium, Low' },
+        labels:      { type: 'array', items: { type: 'string' }, description: 'Labels to attach' },
+        parent:      { type: 'string', description: 'Parent issue key (e.g. epic key) to link this issue under' },
+        story_points:{ type: 'number', description: 'Story point estimate' },
+      },
+      required: ['project', 'summary', 'issuetype'],
+    },
+  },
+  {
+    name: 'update_issue',
+    description: 'Update fields on an existing Jira issue. Only provided fields are changed; omitted fields are left as-is.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key:         { type: 'string', description: 'Issue key to update, e.g. PROJ-42' },
+        summary:     { type: 'string', description: 'New summary / title' },
+        description: { type: 'string', description: 'New description in plain text' },
+        issuetype:   { type: 'string', description: 'New issue type name, e.g. Bug, Story, Task' },
+        assignee:    { type: 'string', description: 'New assignee account ID. Pass null to unassign.' },
+        priority:    { type: 'string', description: 'New priority name, e.g. High, Medium, Low' },
+        labels:      { type: 'array', items: { type: 'string' }, description: 'Replace labels with this list' },
+        parent:      { type: 'string', description: 'Parent issue key to re-parent this issue' },
+        story_points:{ type: 'number', description: 'New story point estimate' },
+      },
+      required: ['key'],
+    },
+  },
+  {
+    name: 'transition_issue',
+    description: 'Move a Jira issue to a new status (e.g. "In Progress", "Done"). Call get_transitions first to discover valid transition IDs for the issue.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key:           { type: 'string', description: 'Issue key, e.g. PROJ-42' },
+        transition_id: { type: 'string', description: 'Transition ID from get_transitions' },
+        comment:       { type: 'string', description: 'Optional comment to post when transitioning' },
+      },
+      required: ['key', 'transition_id'],
+    },
+  },
+  {
+    name: 'get_transitions',
+    description: 'List the available workflow transitions for an issue. Use this before transition_issue to find the correct transition_id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', description: 'Issue key, e.g. PROJ-42' },
+      },
+      required: ['key'],
+    },
+  },
+  {
+    name: 'assign_issue',
+    description: 'Assign or reassign a Jira issue to a user. Use search_users to look up the accountId first.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key:        { type: 'string', description: 'Issue key, e.g. PROJ-42' },
+        account_id: { type: 'string', description: 'Assignee accountId from search_users. Pass null to unassign.' },
+      },
+      required: ['key'],
+    },
+  },
+  {
+    name: 'search_users',
+    description: 'Search for Jira users by name or email. Returns accountId, displayName, and email — use accountId with assign_issue or create_issue.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query:       { type: 'string', description: 'Name or email to search for' },
+        max_results: { type: 'number', description: 'Max results to return (default 10)' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'bulk_move_issues',
     description: 'Move multiple issues from one project to another. Uses Jira bulk move API. Specify source_project, target_project, and optional jql to filter issues.',
     inputSchema: {
@@ -732,6 +824,105 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const statePath = join(dirname(fileURLToPath(import.meta.url)), 'state.json');
       writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n');
       result = { ok: true, active: state };
+
+    } else if (name === 'create_issue') {
+      const { project, summary, issuetype, description, assignee, priority, labels, parent, story_points } = args;
+      const fields = {
+        project:   { key: project },
+        summary,
+        issuetype: { name: issuetype },
+      };
+      if (description) {
+        fields.description = {
+          type: 'doc', version: 1,
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: description }] }],
+        };
+      }
+      if (assignee !== undefined) fields.assignee = assignee ? { accountId: assignee } : null;
+      if (priority)      fields.priority = { name: priority };
+      if (labels?.length) fields.labels = labels;
+      if (parent)        fields.parent = { key: parent };
+      if (story_points != null) fields.story_points = story_points;
+      const data = await jiraFetch('/rest/api/3/issue', {
+        method: 'POST',
+        body: JSON.stringify({ fields }),
+      });
+      result = { key: data.key, id: data.id, url: `https://${loadSecrets().JIRA_DOMAIN}/browse/${data.key}` };
+
+    } else if (name === 'update_issue') {
+      const { key, summary, description, issuetype, assignee, priority, labels, parent, story_points } = args;
+      const fields = {};
+      if (summary !== undefined)    fields.summary = summary;
+      if (issuetype !== undefined) {
+        // Use id from editmeta — Jira Cloud often requires id for issuetype updates
+        const editmeta = await jiraFetch(`/rest/api/3/issue/${key}/editmeta`);
+        const allowed = editmeta?.fields?.issuetype?.allowedValues ?? [];
+        const match = allowed.find((a) => a.name.toLowerCase() === issuetype.toLowerCase());
+        if (!match) {
+          throw new Error(
+            `Issue type "${issuetype}" not allowed for this issue. ` +
+            `Allowed: ${allowed.map((a) => a.name).join(', ') || 'none'}`
+          );
+        }
+        fields.issuetype = { id: match.id };
+      }
+      if (description !== undefined) {
+        fields.description = {
+          type: 'doc', version: 1,
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: description }] }],
+        };
+      }
+      if (assignee !== undefined) fields.assignee = assignee ? { accountId: assignee } : null;
+      if (priority !== undefined)  fields.priority = { name: priority };
+      if (labels !== undefined)    fields.labels = labels;
+      if (parent !== undefined)    fields.parent = { key: parent };
+      if (story_points !== undefined) fields.story_points = story_points;
+      await jiraFetch(`/rest/api/3/issue/${key}`, {
+        method: 'PUT',
+        body: JSON.stringify({ fields }),
+      });
+      result = { ok: true, key, url: `https://${loadSecrets().JIRA_DOMAIN}/browse/${key}` };
+
+    } else if (name === 'get_transitions') {
+      const data = await jiraFetch(`/rest/api/3/issue/${args.key}/transitions`);
+      result = (data?.transitions ?? []).map((t) => ({ id: t.id, name: t.name, to: t.to?.name }));
+
+    } else if (name === 'transition_issue') {
+      const { key, transition_id, comment } = args;
+      const payload = { transition: { id: transition_id } };
+      if (comment) {
+        payload.update = {
+          comment: [{ add: { body: {
+            type: 'doc', version: 1,
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: comment }] }],
+          } } }],
+        };
+      }
+      await jiraFetch(`/rest/api/3/issue/${key}/transitions`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      result = { ok: true, key, url: `https://${loadSecrets().JIRA_DOMAIN}/browse/${key}` };
+
+    } else if (name === 'assign_issue') {
+      const { key, account_id } = args;
+      await jiraFetch(`/rest/api/3/issue/${key}/assignee`, {
+        method: 'PUT',
+        body: JSON.stringify({ accountId: account_id ?? null }),
+      });
+      result = { ok: true, key, url: `https://${loadSecrets().JIRA_DOMAIN}/browse/${key}` };
+
+    } else if (name === 'search_users') {
+      const { query, max_results = 10 } = args;
+      const data = await jiraFetch(
+        `/rest/api/3/user/search?query=${encodeURIComponent(query)}&maxResults=${max_results}`
+      );
+      result = (data ?? []).map((u) => ({
+        accountId:   u.accountId,
+        displayName: u.displayName,
+        email:       u.emailAddress ?? null,
+        active:      u.active,
+      }));
 
     } else if (name === 'bulk_move_issues') {
       const { source_project, target_project, jql } = args;

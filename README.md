@@ -33,11 +33,13 @@ For scripting or terminal use, a CLI query script is also included.
 | `get_sprint_issues` | ✅ | All issues inside a specific sprint |
 | `get_active_project` | ✅ | Read the currently active project key and board from local state |
 | `set_active_project` | ✅ | Switch the active project (persisted to `state.json`); used by the AI on "switch to X" requests |
-| Create / update issue | 🔲 | Create new issues or update existing fields from the IDE |
+| `create_issue` | ✅ | Create a new issue (summary, type, description, assignee, priority, labels, parent, story points) |
+| `update_issue` | ✅ | Update any field on an existing issue; only provided fields are changed |
 | Add comment | 🔲 | Post a comment to an issue from the IDE |
-| Transition issue | 🔲 | Move an issue to a new status (e.g. In Progress → Done) |
-| Assign issue | 🔲 | Assign or reassign an issue to a user |
-| `get_user` / `list_members` | 🔲 | Look up team members by name or email |
+| `get_transitions` | ✅ | List available workflow transitions for an issue, including custom statuses (use before transition_issue) |
+| `transition_issue` | ✅ | Move an issue to a new status (e.g. In Progress → Done); supports custom statuses (e.g. Testing) with optional comment |
+| `assign_issue` | ✅ | Assign or reassign an issue to a user (or unassign by passing null) |
+| `search_users` | ✅ | Look up team members by name or email; returns accountId for use with assign/create |
 | Attachment download | 🔲 | Fetch attachment content (not just metadata) |
 
 ### `get_issue` — returned fields
