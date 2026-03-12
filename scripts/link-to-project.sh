@@ -4,23 +4,19 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 JIRA_MCP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-COMMANDS=(
-  ".cursor/commands/queries/jira.md"
-  ".cursor/commands/queries/confluence.md"
-  ".cursor/commands/queries/jira-create-issues.md"
-)
-RULES=(
-  ".cursor/rules/task-creation.mdc"
-)
+COMMANDS_DIR=".cursor/commands/jira-mcp"
 
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [options] <target-project>
 
-Link jira-mcp commands and rules into another project via symlinks.
+Link jira-mcp commands into another project via a single directory symlink.
+
+What gets linked:
+  .cursor/commands/jira-mcp/   (all Jira/Confluence commands)
 
 Options:
-  -u, --unlink   Remove previously created symlinks
+  -u, --unlink   Remove previously created symlink
   -l, --list     Show what would be linked (dry run)
   -h, --help     Show this help
 
@@ -50,53 +46,32 @@ done
 TARGET="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: directory does not exist: $TARGET"; exit 1; }
 [[ "$TARGET" == "$JIRA_MCP_ROOT" ]] && { echo "Error: target is jira-mcp itself."; exit 1; }
 
-ALL_FILES=("${COMMANDS[@]}" "${RULES[@]}")
-
 if $LIST; then
   echo "Would link from jira-mcp into $TARGET:"
-  for f in "${ALL_FILES[@]}"; do
-    echo "  $f"
-  done
+  echo "  $COMMANDS_DIR/"
   exit 0
 fi
 
 if $UNLINK; then
-  removed=0
-  for f in "${ALL_FILES[@]}"; do
-    dest="$TARGET/$f"
-    if [[ -L "$dest" ]]; then
-      rm "$dest"
-      echo "  removed  $f"
-      ((removed++))
-    fi
-  done
-  echo "Done — $removed symlink(s) removed."
+  if [[ -L "$TARGET/$COMMANDS_DIR" ]]; then
+    rm "$TARGET/$COMMANDS_DIR"
+    echo "  removed  $COMMANDS_DIR"
+    echo "Done — 1 symlink removed."
+  else
+    echo "Done — nothing to remove."
+  fi
 else
-  linked=0
-  skipped=0
-  for f in "${ALL_FILES[@]}"; do
-    src="$JIRA_MCP_ROOT/$f"
-    dest="$TARGET/$f"
+  mkdir -p "$TARGET/.cursor/commands"
 
-    if [[ ! -f "$src" ]]; then
-      echo "  missing  $f  (source not found, skipped)"
-      ((skipped++))
-      continue
-    fi
+  if [[ -L "$TARGET/$COMMANDS_DIR" ]]; then
+    rm "$TARGET/$COMMANDS_DIR"
+  elif [[ -e "$TARGET/$COMMANDS_DIR" ]]; then
+    echo "  skipped  $COMMANDS_DIR  (already exists as regular directory)"
+    echo "Done — 0 linked, 1 skipped."
+    exit 0
+  fi
 
-    mkdir -p "$(dirname "$dest")"
-
-    if [[ -L "$dest" ]]; then
-      rm "$dest"
-    elif [[ -e "$dest" ]]; then
-      echo "  skipped  $f  (regular file already exists)"
-      ((skipped++))
-      continue
-    fi
-
-    ln -s "$src" "$dest"
-    echo "  linked   $f"
-    ((linked++))
-  done
-  echo "Done — $linked linked, $skipped skipped."
+  ln -s "$JIRA_MCP_ROOT/$COMMANDS_DIR" "$TARGET/$COMMANDS_DIR"
+  echo "  linked   $COMMANDS_DIR/"
+  echo "Done — 1 linked."
 fi

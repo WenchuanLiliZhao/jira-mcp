@@ -86,37 +86,52 @@ For scripting or terminal use, a CLI query script is also included.
 ### Setup & AI Guidance
 
 
-| Feature                               | Status | Description                                                                                              |
-| ------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------- |
-| Interactive `/install` command        | ✅      | AI-guided setup: collects credentials, verifies API access, writes `secrets.json`                        |
-| `/queries/jira` command               | ✅      | Cursor AI rule telling the AI when and how to use each Jira tool                                         |
-| `/queries/confluence` command         | ✅      | Cursor AI rule for querying Confluence spaces and pages                                                  |
-| `/queries/jira-create-issues` command | ✅      | Cursor AI rule for planning and creating Jira tasks and epics                                            |
-| Project-specific config gitignored    | ✅      | `secrets.json`, `state.json`, and `jira.md` are local-only; `.example` files are committed for reference |
-| Guided token generation link          | ✅      | `/install` links directly to Atlassian API token page                                                    |
-| Multi-project support                 | ✅      | `set_active_project` / `get_active_project` tools; switch by asking the AI                               |
-| Hot-reload credentials                | ✅      | Credentials are re-read on every request — switch accounts via `/install` without restarting Cursor      |
-| Auto-refresh on token expiry          | 🔲     | Detect 401 and prompt for a new token                                                                    |
+| Feature                                    | Status | Description                                                                                              |
+| ------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------- |
+| Interactive `/jira-mcp/install` command     | ✅      | AI-guided setup: collects credentials, verifies API access, writes `secrets.json`                        |
+| `/jira-mcp/jira` command                   | ✅      | Cursor AI rule telling the AI when and how to use each Jira tool                                         |
+| `/jira-mcp/confluence` command             | ✅      | Cursor AI rule for querying Confluence spaces and pages                                                  |
+| `/jira-mcp/jira-create-issues` command     | ✅      | Cursor AI rule for planning and creating Jira tasks and epics                                            |
+| Automated install script                    | ✅      | `scripts/install.sh` — npm install + MCP server registration in one command                              |
+| Symlink-based project linking               | ✅      | `scripts/link-to-project.sh` — link commands and rules into any project                                  |
+| Project-specific config gitignored          | ✅      | `secrets.json`, `state.json` are local-only; `.example` files are committed for reference                |
+| Guided token generation link                | ✅      | `/jira-mcp/install` links directly to Atlassian API token page                                           |
+| Multi-project support                       | ✅      | `set_active_project` / `get_active_project` tools; switch by asking the AI                               |
+| Hot-reload credentials                      | ✅      | Credentials are re-read on every request — switch accounts without restarting Cursor                     |
+| Auto-refresh on token expiry                | 🔲     | Detect 401 and prompt for a new token                                                                    |
 
 
 ---
 
 ## Quick start
 
+### AI-assisted install (recommended)
+
+Open any project in Cursor **Agent mode** and say:
+
+> "Help me install https://github.com/\<user\>/jira-mcp"
+
+The AI will clone the repo, run the setup scripts, link commands into your project, and walk you through credential configuration.
+
+### Manual install
+
 ```bash
-# 1. Install dependencies
-npm install
+# 1. Clone the repo
+git clone https://github.com/<user>/jira-mcp.git ~/jira-mcp
 
-# 2. Register with Cursor — add to ~/.cursor/mcp.json:
-#    { "mcpServers": { "jira": { "command": "node", "args": ["/path/to/jira-mcp/server/mcp-server.js"] } } }
+# 2. Install deps + register MCP server
+bash ~/jira-mcp/scripts/install.sh
 
-# 3. Restart Cursor, then run in Agent mode:
-/install
+# 3. Link commands & rules into your project
+bash ~/jira-mcp/scripts/link-to-project.sh /path/to/your/project
+
+# 4. Restart Cursor, then run in Agent mode:
+/jira-mcp/install
 ```
 
-The `/install` command will walk you through the rest interactively.
+The `/jira-mcp/install` command will walk you through Jira credential setup.
 
-See [INSTALLATION.md](INSTALLATION.md) for full setup details and troubleshooting.
+See [INSTALLATION.md](INSTALLATION.md) for full details and troubleshooting.
 
 ---
 

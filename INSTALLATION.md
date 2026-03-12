@@ -1,10 +1,24 @@
 # Jira MCP — Installation Guide
 
-Connect Cursor AI to your Jira projects so you can query tasks, issues, and sprints directly from the IDE.
+Connect Cursor AI to your Jira Cloud and Confluence so you can query tasks, issues, sprints, and pages directly from the IDE.
 
 ---
 
-## Prerequisites
+## AI-Assisted Install (recommended)
+
+Open any project in Cursor, switch to **Agent mode**, and say:
+
+```
+Help me install https://github.com/<user>/jira-mcp
+```
+
+The AI will follow the steps below automatically.
+
+---
+
+## Step-by-step Guide
+
+### Prerequisites
 
 | Requirement | Version |
 |---|---|
@@ -12,82 +26,73 @@ Connect Cursor AI to your Jira projects so you can query tasks, issues, and spri
 | Cursor IDE | Any recent version (MCP support required) |
 | Jira Cloud | An active Atlassian Cloud account |
 
----
-
-## Step 1 — Install Dependencies
+### 1. Clone the repository
 
 ```bash
-cd jira-mcp
-npm install
+git clone https://github.com/<user>/jira-mcp.git ~/jira-mcp
 ```
 
----
+Clone to any location you like. `~/jira-mcp` is used as an example throughout this guide.
 
-## Step 2 — Register with Cursor
+### 2. Run the install script
 
-Open (or create) `~/.cursor/mcp.json` and add the `jira` entry:
-
-```json
-{
-  "mcpServers": {
-    "jira": {
-      "command": "node",
-      "args": ["/absolute/path/to/jira-mcp/server/mcp-server.js"]
-    }
-  }
-}
-```
-
-To find the absolute path:
 ```bash
-cd jira-mcp && pwd
-# append /server/mcp-server.js to the output
+bash ~/jira-mcp/scripts/install.sh
 ```
+
+This does two things:
+- Installs npm dependencies (`@modelcontextprotocol/sdk`, `md-to-adf`)
+- Registers the MCP server in `~/.cursor/mcp.json`
+
+### 3. Link commands into your project
+
+```bash
+bash ~/jira-mcp/scripts/link-to-project.sh /path/to/your/project
+```
+
+This creates one symlink in your project:
+- `.cursor/commands/jira-mcp/` — all Jira and Confluence commands
+
+To preview what will be linked: add `--list`.
+To remove the link later: add `--unlink`.
+
+### 4. Restart Cursor
+
+Fully quit and reopen Cursor so it picks up the new MCP server from `mcp.json`.
+This is only needed once — credential changes take effect immediately.
+
+### 5. Configure credentials
+
+Open a chat in **Agent mode** and run:
+
+```
+/jira-mcp/install
+```
+
+The AI will walk you through entering your Jira domain, email, and API token. If you don't have an API token yet, create one at [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).
 
 ---
 
-## Step 3 — Run the Setup Command
+## For AI Agents
 
-Fully quit and reopen Cursor, then open a new chat in **Agent mode** and run:
+When a user asks you to install jira-mcp, follow these steps:
 
-```
-/install
-```
-
-The AI will guide you through the rest — collecting your Jira credentials, verifying API access, and writing `secrets.json`. The first time you ask a Jira question, it will prompt you to choose a project.
+1. **Clone** the repo to `~/jira-mcp/` (or a path the user specifies)
+2. **Run** `bash <repo>/scripts/install.sh` — installs deps and registers MCP server
+3. **Run** `bash <repo>/scripts/link-to-project.sh <current-project-path>` — symlinks commands into the project
+4. **Tell the user** to restart Cursor (quit and reopen)
+5. **After restart**, run the `/jira-mcp/install` command to configure Jira credentials
 
 ---
 
-## Available Tools
+## Available Commands (after linking)
 
-| Tool | Description |
+| Command | Description |
 |---|---|
-| `list_projects` | List all Jira projects accessible to the authenticated user |
-| `list_issues` | List issues in a project (with optional JQL filter) |
-| `get_issue` | Get full details for a single issue (description, comments, subtasks) |
-| `search_issues` | Search using any JQL query |
-| `get_my_issues` | Get all issues assigned to the current user |
-| `list_sprints` | List sprints for a project (active / future / closed) |
-| `get_sprint_issues` | Get all issues inside a specific sprint |
-
----
-
-## Usage Examples
-
-Once installed, ask Cursor things like:
-
-```
-Show me all in-progress issues in the ACME project.
-```
-```
-What's in the current sprint?
-```
-```
-Get the details for issue ACME-42.
-```
-```
-What issues are assigned to me right now?
-```
+| `/jira-mcp/install` | Interactive credential setup |
+| `/jira-mcp/jira` | Query Jira issues, sprints, and tasks |
+| `/jira-mcp/confluence` | Query Confluence spaces and pages |
+| `/jira-mcp/jira-create-issues` | Plan and create Jira tasks and epics |
 
 ---
 
@@ -99,26 +104,38 @@ Your credentials are incorrect. Double-check:
 - `JIRA_EMAIL` — must match your Atlassian account exactly
 - `JIRA_TOKEN` — copied in full, with no extra whitespace
 
-Re-run `/install` to overwrite `server/secrets.json` with corrected values. Credentials are reloaded on every request — no Cursor restart needed.
+Re-run `/jira-mcp/install` to overwrite credentials. Changes take effect immediately — no restart needed.
 
 ### Tools not appearing in Cursor
-- Make sure `mcp.json` uses valid JSON (no trailing commas)
+- Make sure `~/.cursor/mcp.json` uses valid JSON (no trailing commas)
 - Verify the `args` path points to `mcp-server.js` and that the file exists
 - Fully restart Cursor (quit the app, reopen — not just reload window)
 
 ### `Cannot find package '@modelcontextprotocol/sdk'`
-Run `npm install` inside the `jira-mcp/` directory.
+Run `npm install` inside the jira-mcp directory, or re-run `scripts/install.sh`.
 
 ### `No boards found for project XYZ`
-The `list_sprints` tool requires a Jira Software **Scrum** or **Kanban** board linked to the project. Kanban boards without sprints will not return sprint data by design.
+The `list_sprints` tool requires a Jira Software **Scrum** or **Kanban** board linked to the project.
 
 ### Empty results from `list_projects`
-Your API token may lack the necessary permissions. Ensure the Atlassian account associated with the token has at least **Browse Projects** permission in Jira.
+Your API token may lack permissions. Ensure the account has at least **Browse Projects** permission in Jira.
 
 ---
 
-## Security Notes
+## Unlinking
 
-- **Never commit your API token** to version control. `server/secrets.json` is in `.gitignore`.
-- The token grants the same access as your Atlassian account — treat it like a password.
-- Tokens can be revoked at any time from [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
+To remove jira-mcp from a project without affecting other projects:
+
+```bash
+bash ~/jira-mcp/scripts/link-to-project.sh --unlink /path/to/your/project
+```
+
+To fully uninstall, also remove the `jira` entry from `~/.cursor/mcp.json` and delete the cloned repo.
+
+---
+
+## Security
+
+- Credentials are stored in `server/secrets.json`, which is in `.gitignore` and never committed.
+- The API token grants the same access as your Atlassian account — treat it like a password.
+- Tokens can be revoked at [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).
