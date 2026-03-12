@@ -93,7 +93,7 @@ For scripting or terminal use, a CLI query script is also included.
 | `/jira-mcp/confluence` command             | ✅      | Cursor AI rule for querying Confluence spaces and pages                                                  |
 | `/jira-mcp/jira-create-issues` command     | ✅      | Cursor AI rule for planning and creating Jira tasks and epics                                            |
 | Automated install script                    | ✅      | `scripts/install.sh` — npm install + MCP server registration in one command                              |
-| Symlink-based project linking               | ✅      | `scripts/link-to-project.sh` — link commands and rules into any project                                  |
+| Symlink-based project linking               | ✅      | `scripts/link-to-project.sh` — link commands into any project                                            |
 | Project-specific config gitignored          | ✅      | `secrets.json`, `state.json` are local-only; `.example` files are committed for reference                |
 | Guided token generation link                | ✅      | `/jira-mcp/install` links directly to Atlassian API token page                                           |
 | Multi-project support                       | ✅      | `set_active_project` / `get_active_project` tools; switch by asking the AI                               |
@@ -122,7 +122,7 @@ git clone https://github.com/<user>/jira-mcp.git ~/jira-mcp
 # 2. Install deps + register MCP server
 bash ~/jira-mcp/scripts/install.sh
 
-# 3. Link commands & rules into your project
+# 3. Link commands into your project
 bash ~/jira-mcp/scripts/link-to-project.sh /path/to/your/project
 
 # 4. Restart Cursor, then run in Agent mode:
@@ -150,3 +150,34 @@ See [INSTALLATION.md](INSTALLATION.md) for full details and troubleshooting.
 - The API token grants the same access as your Atlassian account — treat it like a password.
 - Tokens can be revoked at any time from [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).
 
+---
+
+## After installation
+
+Your project gains **one symlink** — nothing else is copied or modified:
+
+```
+my-proj/
+├── .cursor/
+│   └── commands/
+│       ├── jira-mcp/          ← symlink to the cloned repo (install, jira, confluence, jira-create-issues)
+│       └── (your own commands, untouched)
+├── src/
+└── package.json
+```
+
+The MCP server, `node_modules`, and credentials stay in the cloned repo (e.g. `~/jira-mcp/`). They never enter your project directory.
+
+---
+
+## Why this is not a Skill
+
+jira-mcp uses **Cursor commands** (slash commands like `/jira-mcp/jira`), not the Skill framework.
+
+| | Commands | Skill |
+|---|---|---|
+| **Activation** | User explicitly runs `/jira-mcp/jira` — precise, on-demand | Agent infers from description — can miss or over-trigger |
+| **Token cost** | Loads only the command you invoke (~500 tokens) | Loads the entire skill file (~2500 tokens) whenever matched |
+| **Isolation** | All commands live under `jira-mcp/` — no pollution of your other commands | N/A |
+
+Commands are more efficient and predictable for Jira workflows. The install script and link script handle setup; no Skill wrapper is needed.
