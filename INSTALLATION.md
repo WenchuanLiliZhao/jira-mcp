@@ -108,7 +108,7 @@ Re-run `/jira-mcp/install` to overwrite credentials. Changes take effect immedia
 
 ### Tools not appearing in Cursor
 - Make sure `~/.cursor/mcp.json` uses valid JSON (no trailing commas)
-- Verify the `args` path points to `mcp-server.js` and that the file exists
+- Verify the `args` path points to `mcp/server.js` and that the file exists
 - Fully restart Cursor (quit the app, reopen — not just reload window)
 
 ### `Cannot find package '@modelcontextprotocol/sdk'`
@@ -136,6 +136,6 @@ To fully uninstall, also remove the `jira` entry from `~/.cursor/mcp.json` and d
 
 ## Security
 
-- Credentials are stored in `server/secrets.json`, which is in `.gitignore` and never committed.
+- Credentials are stored in `config/secrets.json`, which is in `.gitignore` and never committed.
 - The API token grants the same access as your Atlassian account — treat it like a password.
 - Tokens can be revoked at [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).

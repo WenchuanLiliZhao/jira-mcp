@@ -20,6 +20,39 @@ For scripting or terminal use, a CLI query script is also included.
 
 ---
 
+## Project Structure
+
+```
+jira-mcp/
+├── lib/                       Shared core (credentials, Jira API client)
+│   ├── config.js              Credential loading, active-project state
+│   └── jira-client.js         Authenticated fetch, data formatters, fetchers
+│
+├── mcp/                       MCP server (Cursor AI integration)
+│   └── server.js
+│
+├── cli/                       CLI tools (terminal / automation)
+│   ├── query.js               Query issues by status, assignee, or JQL
+│   ├── bulk-move.js           Move issues between projects
+│   ├── bulk-assign.js         Assign issues to yourself
+│   ├── bulk-transition.js     Transition issues to a target status
+│   ├── set-epic-link.js       Link issues to an epic
+│   └── set-project-description.js  Set a project's description
+│
+├── config/                    Configuration (gitignored secrets + state)
+│   ├── secrets.json           Jira credentials (local only)
+│   ├── secrets.json.example   Template for secrets.json
+│   └── state.json             Active project state (local only)
+│
+├── scripts/                   Install & link helpers
+│   ├── install.sh             npm install + MCP server registration
+│   └── link-to-project.sh    Symlink commands into any project
+│
+└── package.json
+```
+
+---
+
 ## Features
 
 ### MCP Tools (Cursor AI integration)
@@ -35,7 +68,7 @@ For scripting or terminal use, a CLI query script is also included.
 | `list_sprints`       | ✅      | List sprints for a project (active / future / closed)                                                                           |
 | `get_sprint_issues`  | ✅      | All issues inside a specific sprint                                                                                             |
 | `get_active_project` | ✅      | Read the currently active project key and board from local state                                                                |
-| `set_active_project` | ✅      | Switch the active project (persisted to `state.json`); used by the AI on "switch to X" requests                                 |
+| `set_active_project` | ✅      | Switch the active project (persisted to `config/state.json`); used by the AI on "switch to X" requests                          |
 | `create_issue`       | ✅      | Create a new issue (summary, type, description, assignee, priority, labels, parent, story points); description accepts Markdown |
 | `update_issue`       | ✅      | Update any field on an existing issue; only provided fields are changed; description accepts Markdown                           |
 | Add comment          | 🔲     | Post a comment to an issue from the IDE                                                                                         |
@@ -88,13 +121,13 @@ For scripting or terminal use, a CLI query script is also included.
 
 | Feature                                    | Status | Description                                                                                              |
 | ------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------- |
-| Interactive `/jira-mcp/install` command     | ✅      | AI-guided setup: collects credentials, verifies API access, writes `secrets.json`                        |
+| Interactive `/jira-mcp/install` command     | ✅      | AI-guided setup: collects credentials, verifies API access, writes `config/secrets.json`                 |
 | `/jira-mcp/jira` command                   | ✅      | Cursor AI rule telling the AI when and how to use each Jira tool                                         |
 | `/jira-mcp/confluence` command             | ✅      | Cursor AI rule for querying Confluence spaces and pages                                                  |
 | `/jira-mcp/jira-create-issues` command     | ✅      | Cursor AI rule for planning and creating Jira tasks and epics                                            |
 | Automated install script                    | ✅      | `scripts/install.sh` — npm install + MCP server registration in one command                              |
 | Symlink-based project linking               | ✅      | `scripts/link-to-project.sh` — link commands into any project                                            |
-| Project-specific config gitignored          | ✅      | `secrets.json`, `state.json` are local-only; `.example` files are committed for reference                |
+| Project-specific config gitignored          | ✅      | `config/secrets.json`, `config/state.json` are local-only; `.example` files are committed for reference  |
 | Guided token generation link                | ✅      | `/jira-mcp/install` links directly to Atlassian API token page                                           |
 | Multi-project support                       | ✅      | `set_active_project` / `get_active_project` tools; switch by asking the AI                               |
 | Hot-reload credentials                      | ✅      | Credentials are re-read on every request — switch accounts without restarting Cursor                     |
@@ -146,7 +179,7 @@ See [INSTALLATION.md](INSTALLATION.md) for full details and troubleshooting.
 
 ## Security
 
-- Credentials are stored in `server/secrets.json`, which is listed in `.gitignore` and never committed.
+- Credentials are stored in `config/secrets.json`, which is listed in `.gitignore` and never committed.
 - The API token grants the same access as your Atlassian account — treat it like a password.
 - Tokens can be revoked at any time from [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).
 

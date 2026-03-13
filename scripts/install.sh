@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 JIRA_MCP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 MCP_JSON="$HOME/.cursor/mcp.json"
-SERVER_PATH="$JIRA_MCP_ROOT/server/mcp-server.js"
+SERVER_PATH="$JIRA_MCP_ROOT/mcp/server.js"
 
 # --- Check Node.js ---
 if ! command -v node &>/dev/null; then
@@ -22,6 +22,9 @@ fi
 echo "[jira-mcp] Installing dependencies..."
 npm install --prefix "$JIRA_MCP_ROOT" --silent
 echo "[jira-mcp] Dependencies installed."
+
+# --- Ensure config directory exists ---
+mkdir -p "$JIRA_MCP_ROOT/config"
 
 # --- Register MCP server in ~/.cursor/mcp.json ---
 mkdir -p "$(dirname "$MCP_JSON")"

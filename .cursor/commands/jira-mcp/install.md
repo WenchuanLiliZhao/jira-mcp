@@ -66,7 +66,7 @@ naturally the first time they query Jira — no need to choose one now.
 
 Once all answers are collected, perform ALL of the following:
 
-1. **Write `server/secrets.json`** with:
+1. **Write `config/secrets.json`** with:
 ```json
 {
   "JIRA_DOMAIN": "<JIRA_DOMAIN>",

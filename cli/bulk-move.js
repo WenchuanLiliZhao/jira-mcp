@@ -1,46 +1,21 @@
 #!/usr/bin/env node
 /**
- * Bulk move Jira issues from one project to another.
- * Reads credentials from secrets.json (same dir as this script).
+ * CLI: bulk move Jira issues from one project to another.
  *
  * Usage:
- *   node server/bulk-move.js --from <SOURCE> --to <TARGET> [options]
+ *   node cli/bulk-move.js --from <SOURCE> --to <TARGET> [options]
  *
  * Options:
  *   --from <KEY>   Source project key (required)
  *   --to   <KEY>   Target project key (required)
  *   --jql  <query> JQL to select issues (default: all issues in source project)
  *   --help         Show this help text
- *
- * Examples:
- *   node server/bulk-move.js --from JM --to TEST
- *   node server/bulk-move.js --from JM --to TEST --jql "issuetype in (Epic, Task)"
- *   node server/bulk-move.js --from JM --to TEST --jql "labels = cli-test"
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { requireSecrets } from '../lib/config.js';
+import { jiraFetch, fetchProjectWithIssueTypes } from '../lib/jira-client.js';
 
-// ── Credentials ───────────────────────────────────────────────────────────────
-
-const dir = dirname(fileURLToPath(import.meta.url));
-const secretsPath = join(dir, 'secrets.json');
-if (!existsSync(secretsPath)) {
-  console.error('Missing secrets.json. Copy secrets.json.example and fill in your credentials.');
-  process.exit(1);
-}
-const secrets = JSON.parse(readFileSync(secretsPath, 'utf8'));
-const { JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN } = secrets;
-if (!JIRA_DOMAIN || !JIRA_EMAIL || !JIRA_TOKEN) {
-  console.error('Missing JIRA_DOMAIN, JIRA_EMAIL, or JIRA_TOKEN in secrets.json');
-  process.exit(1);
-}
-
-const JIRA_BASE = `https://${JIRA_DOMAIN}`;
-const AUTH = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
-
-// ── CLI argument parsing ──────────────────────────────────────────────────────
+requireSecrets();
 
 function parseArgs(argv) {
   const args = {};
@@ -56,7 +31,7 @@ function parseArgs(argv) {
 }
 
 const HELP = `
-Usage: node server/bulk-move.js --from <SOURCE> --to <TARGET> [options]
+Usage: node cli/bulk-move.js --from <SOURCE> --to <TARGET> [options]
 
 Options:
   --from <KEY>   Source project key (required)
@@ -65,33 +40,10 @@ Options:
   --help         Show this help text
 
 Examples:
-  node server/bulk-move.js --from JM --to TEST
-  node server/bulk-move.js --from JM --to TEST --jql "issuetype in (Epic, Task)"
-  node server/bulk-move.js --from JM --to TEST --jql "labels = cli-test"
+  node cli/bulk-move.js --from JM --to TEST
+  node cli/bulk-move.js --from JM --to TEST --jql "issuetype in (Epic, Task)"
+  node cli/bulk-move.js --from JM --to TEST --jql "labels = cli-test"
 `.trim();
-
-// ── Jira API helper ───────────────────────────────────────────────────────────
-
-async function jiraFetch(path, opts = {}) {
-  const res = await fetch(`${JIRA_BASE}${path}`, {
-    ...opts,
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Basic ${AUTH}`,
-      'Content-Type': 'application/json',
-      ...opts.headers,
-    },
-  });
-  const text = await res.text();
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try { msg = JSON.parse(text).errorMessages?.[0] || JSON.parse(text).message || text; } catch {}
-    throw new Error(msg);
-  }
-  return text ? JSON.parse(text) : null;
-}
-
-// ── Data fetchers ─────────────────────────────────────────────────────────────
 
 async function fetchIssuesByJQL(jql, maxResults = 1000) {
   const data = await jiraFetch('/rest/api/3/search/jql', {
@@ -104,17 +56,6 @@ async function fetchIssuesByJQL(jql, maxResults = 1000) {
     issuetype: issue.fields?.issuetype?.name ?? '',
   }));
 }
-
-async function fetchProjectWithIssueTypes(projectKey) {
-  const data = await jiraFetch(`/rest/api/3/project/${encodeURIComponent(projectKey)}`);
-  return {
-    key:        data.key,
-    name:       data.name,
-    issueTypes: (data.issueTypes ?? []).map((it) => ({ id: it.id, name: it.name })),
-  };
-}
-
-// ── Bulk move ─────────────────────────────────────────────────────────────────
 
 async function pollUntilComplete(taskId, label) {
   for (let i = 0; i < 60; i++) {
@@ -136,8 +77,6 @@ async function pollUntilComplete(taskId, label) {
   }
   throw new Error('Bulk move timed out after 120 seconds');
 }
-
-// ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
@@ -183,7 +122,6 @@ async function main() {
     byType[typeName].push(issue.key);
   }
 
-  // Move Epics first so child issues can be re-parented correctly, then all other types
   const allTypes = Object.keys(byType);
   const typeOrder = ['Epic', ...allTypes.filter((t) => t !== 'Epic')];
 
