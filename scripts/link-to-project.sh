@@ -2,18 +2,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-JIRA_MCP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+JIRA_LENS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-COMMANDS_DIR=".cursor/commands/jira-mcp"
+COMMANDS_DIR=".cursor/commands/jira-lens"
 
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [options] <target-project>
 
-Link jira-mcp commands into another project via a single directory symlink.
+Link jira-lens commands into another project via a single directory symlink.
 
 What gets linked:
-  .cursor/commands/jira-mcp/   (all Jira/Confluence commands)
+  .cursor/commands/jira-lens/   (all Jira/Confluence commands)
 
 Options:
   -u, --unlink   Remove previously created symlink
@@ -44,10 +44,10 @@ done
 [[ -z "$TARGET" ]] && { echo "Error: target project path required."; echo "Run with --help for usage."; exit 1; }
 
 TARGET="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: directory does not exist: $TARGET"; exit 1; }
-[[ "$TARGET" == "$JIRA_MCP_ROOT" ]] && { echo "Error: target is jira-mcp itself."; exit 1; }
+[[ "$TARGET" == "$JIRA_LENS_ROOT" ]] && { echo "Error: target is jira-lens itself."; exit 1; }
 
 if $LIST; then
-  echo "Would link from jira-mcp into $TARGET:"
+  echo "Would link from jira-lens into $TARGET:"
   echo "  $COMMANDS_DIR/"
   exit 0
 fi
@@ -71,7 +71,7 @@ else
     exit 0
   fi
 
-  ln -s "$JIRA_MCP_ROOT/$COMMANDS_DIR" "$TARGET/$COMMANDS_DIR"
+  ln -s "$JIRA_LENS_ROOT/$COMMANDS_DIR" "$TARGET/$COMMANDS_DIR"
   echo "  linked   $COMMANDS_DIR/"
   echo "Done — 1 linked."
 fi

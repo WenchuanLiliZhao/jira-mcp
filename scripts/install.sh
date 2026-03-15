@@ -2,29 +2,29 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-JIRA_MCP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+JIRA_LENS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 MCP_JSON="$HOME/.cursor/mcp.json"
-SERVER_PATH="$JIRA_MCP_ROOT/mcp/server.js"
+SERVER_PATH="$JIRA_LENS_ROOT/mcp/server.js"
 
 # --- Check Node.js ---
 if ! command -v node &>/dev/null; then
-  echo "[jira-mcp] Error: Node.js is not installed. Install Node 18+ first."
+  echo "[jira-lens] Error: Node.js is not installed. Install Node 18+ first."
   exit 1
 fi
 
 NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
 if [[ "$NODE_MAJOR" -lt 18 ]]; then
-  echo "[jira-mcp] Error: Node.js >= 18 required (found v$(node -v))."
+  echo "[jira-lens] Error: Node.js >= 18 required (found v$(node -v))."
   exit 1
 fi
 
 # --- Install npm dependencies ---
-echo "[jira-mcp] Installing dependencies..."
-npm install --prefix "$JIRA_MCP_ROOT" --silent
-echo "[jira-mcp] Dependencies installed."
+echo "[jira-lens] Installing dependencies..."
+npm install --prefix "$JIRA_LENS_ROOT" --silent
+echo "[jira-lens] Dependencies installed."
 
 # --- Ensure config directory exists ---
-mkdir -p "$JIRA_MCP_ROOT/config"
+mkdir -p "$JIRA_LENS_ROOT/config"
 
 # --- Register MCP server in ~/.cursor/mcp.json ---
 mkdir -p "$(dirname "$MCP_JSON")"
@@ -41,12 +41,12 @@ if (fs.existsSync(path)) {
 }
 
 if (config.mcpServers.jira) {
-  console.log('[jira-mcp] MCP server already registered in ' + path + ' — skipped.');
+  console.log('[jira-lens] MCP server already registered in ' + path + ' — skipped.');
 } else {
   config.mcpServers.jira = { command: 'node', args: [serverPath] };
   fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
-  console.log('[jira-mcp] Registered MCP server in ' + path);
+  console.log('[jira-lens] Registered MCP server in ' + path);
 }
 "
 
-echo "[jira-mcp] Done. Restart Cursor to activate the Jira tools."
+echo "[jira-lens] Done. Restart Cursor to activate the Jira tools."

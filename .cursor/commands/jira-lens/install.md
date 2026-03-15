@@ -1,6 +1,6 @@
 # Install Command
 
-Guide the user through first-time setup of jira-mcp, step by step.
+Guide the user through first-time setup of jira-lens, step by step.
 Ask for one piece of information at a time, confirm each answer before moving on,
 then write all config files at the end.
 
@@ -44,7 +44,7 @@ Save as `JIRA_EMAIL`.
 Ask:
 > "What is your Jira API token?
 > If you don't have one yet, go to: https://id.atlassian.com/manage-profile/security/api-tokens
-> Click **Create API token**, give it a name (e.g. `cursor-jira-mcp`), and paste the token here."
+> Click **Create API token**, give it a name (e.g. `cursor-jira-lens`), and paste the token here."
 
 Save as `JIRA_TOKEN`.
 

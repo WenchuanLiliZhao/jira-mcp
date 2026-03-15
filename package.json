@@ -1,7 +1,7 @@
 {
-  "name": "jira-mcp",
+  "name": "jira-lens",
   "version": "1.0.0",
-  "description": "Jira MCP server for Cursor AI — query Jira projects, issues, and sprints directly from the IDE.",
+  "description": "Jira Lens — Jira MCP server for Cursor AI — query Jira projects, issues, and sprints directly from the IDE.",
   "type": "module",
   "main": "mcp/server.js",
   "scripts": {

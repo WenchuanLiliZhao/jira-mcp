@@ -1,6 +1,6 @@
 /**
  * @file mcp/server.js
- * @description Jira MCP Server
+ * @description Jira Lens MCP Server
  *
  * Exposes Jira and Confluence data as MCP tools so that Cursor AI can
  * query and mutate project data in real time during conversations.
@@ -39,7 +39,7 @@ import {
 {
   const { JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN } = loadSecrets();
   if (!JIRA_DOMAIN || !JIRA_EMAIL || !JIRA_TOKEN) {
-    process.stderr.write('Jira MCP: Missing credentials. Create config/secrets.json or set JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN in env.\n');
+    process.stderr.write('Jira Lens: Missing credentials. Create config/secrets.json or set JIRA_DOMAIN, JIRA_EMAIL, JIRA_TOKEN in env.\n');
     process.exit(1);
   }
 }

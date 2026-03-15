@@ -1,4 +1,4 @@
-# JIRA MCP
+# Jira Lens
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that connects **Cursor AI** to your Jira Cloud workspace. Query tasks, issues, sprints, and comments directly from the IDE — no scripts, no copy-pasting, just ask.
 
@@ -23,7 +23,7 @@ For scripting or terminal use, a CLI query script is also included.
 ## Project Structure
 
 ```
-jira-mcp/
+jira-lens/
 ├── lib/                       Shared core (credentials, Jira API client)
 │   ├── config.js              Credential loading, active-project state
 │   └── jira-client.js         Authenticated fetch, data formatters, fetchers
@@ -121,14 +121,14 @@ jira-mcp/
 
 | Feature                                    | Status | Description                                                                                              |
 | ------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------- |
-| Interactive `/jira-mcp/install` command     | ✅      | AI-guided setup: collects credentials, verifies API access, writes `config/secrets.json`                 |
-| `/jira-mcp/jira` command                   | ✅      | Cursor AI rule telling the AI when and how to use each Jira tool                                         |
-| `/jira-mcp/confluence` command             | ✅      | Cursor AI rule for querying Confluence spaces and pages                                                  |
-| `/jira-mcp/jira-create-issues` command     | ✅      | Cursor AI rule for planning and creating Jira tasks and epics                                            |
+| Interactive `/jira-lens/install` command     | ✅      | AI-guided setup: collects credentials, verifies API access, writes `config/secrets.json`                 |
+| `/jira-lens/jira` command                   | ✅      | Cursor AI rule telling the AI when and how to use each Jira tool                                         |
+| `/jira-lens/confluence` command             | ✅      | Cursor AI rule for querying Confluence spaces and pages                                                  |
+| `/jira-lens/jira-create-issues` command     | ✅      | Cursor AI rule for planning and creating Jira tasks and epics                                            |
 | Automated install script                    | ✅      | `scripts/install.sh` — npm install + MCP server registration in one command                              |
 | Symlink-based project linking               | ✅      | `scripts/link-to-project.sh` — link commands into any project                                            |
 | Project-specific config gitignored          | ✅      | `config/secrets.json`, `config/state.json` are local-only; `.example` files are committed for reference  |
-| Guided token generation link                | ✅      | `/jira-mcp/install` links directly to Atlassian API token page                                           |
+| Guided token generation link                | ✅      | `/jira-lens/install` links directly to Atlassian API token page                                           |
 | Multi-project support                       | ✅      | `set_active_project` / `get_active_project` tools; switch by asking the AI                               |
 | Hot-reload credentials                      | ✅      | Credentials are re-read on every request — switch accounts without restarting Cursor                     |
 | Auto-refresh on token expiry                | 🔲     | Detect 401 and prompt for a new token                                                                    |
@@ -142,7 +142,7 @@ jira-mcp/
 
 Open any project in Cursor **Agent mode** and say:
 
-> "Help me install https://github.com/\<user\>/jira-mcp"
+> "Help me install https://github.com/\<user\>/jira-lens"
 
 The AI will clone the repo, run the setup scripts, link commands into your project, and walk you through credential configuration.
 
@@ -150,19 +150,19 @@ The AI will clone the repo, run the setup scripts, link commands into your proje
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/<user>/jira-mcp.git ~/jira-mcp
+git clone https://github.com/<user>/jira-lens.git ~/jira-lens
 
 # 2. Install deps + register MCP server
-bash ~/jira-mcp/scripts/install.sh
+bash ~/jira-lens/scripts/install.sh
 
 # 3. Link commands into your project
-bash ~/jira-mcp/scripts/link-to-project.sh /path/to/your/project
+bash ~/jira-lens/scripts/link-to-project.sh /path/to/your/project
 
 # 4. Restart Cursor, then run in Agent mode:
-/jira-mcp/install
+/jira-lens/install
 ```
 
-The `/jira-mcp/install` command will walk you through Jira credential setup.
+The `/jira-lens/install` command will walk you through Jira credential setup.
 
 See [INSTALLATION.md](INSTALLATION.md) for full details and troubleshooting.
 
@@ -193,24 +193,24 @@ Your project gains **one symlink** — nothing else is copied or modified:
 my-proj/
 ├── .cursor/
 │   └── commands/
-│       ├── jira-mcp/          ← symlink to the cloned repo (install, jira, confluence, jira-create-issues)
+│       ├── jira-lens/          ← symlink to the cloned repo (install, jira, confluence, jira-create-issues)
 │       └── (your own commands, untouched)
 ├── src/
 └── package.json
 ```
 
-The MCP server, `node_modules`, and credentials stay in the cloned repo (e.g. `~/jira-mcp/`). They never enter your project directory.
+The MCP server, `node_modules`, and credentials stay in the cloned repo (e.g. `~/jira-lens/`). They never enter your project directory.
 
 ---
 
 ## Why this is not a Skill
 
-jira-mcp uses **Cursor commands** (slash commands like `/jira-mcp/jira`), not the Skill framework.
+jira-lens uses **Cursor commands** (slash commands like `/jira-lens/jira`), not the Skill framework.
 
 | | Commands | Skill |
 |---|---|---|
-| **Activation** | User explicitly runs `/jira-mcp/jira` — precise, on-demand | Agent infers from description — can miss or over-trigger |
+| **Activation** | User explicitly runs `/jira-lens/jira` — precise, on-demand | Agent infers from description — can miss or over-trigger |
 | **Token cost** | Loads only the command you invoke (~500 tokens) | Loads the entire skill file (~2500 tokens) whenever matched |
-| **Isolation** | All commands live under `jira-mcp/` — no pollution of your other commands | N/A |
+| **Isolation** | All commands live under `jira-lens/` — no pollution of your other commands | N/A |
 
 Commands are more efficient and predictable for Jira workflows. The install script and link script handle setup; no Skill wrapper is needed.
