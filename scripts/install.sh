@@ -8,20 +8,20 @@ SERVER_PATH="$JIRA_LENS_ROOT/mcp/server.js"
 
 # --- Check Node.js ---
 if ! command -v node &>/dev/null; then
-  echo "[jira-lens] Error: Node.js is not installed. Install Node 18+ first."
+  echo "[Jira-MCP] Error: Node.js is not installed. Install Node 18+ first."
   exit 1
 fi
 
 NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
 if [[ "$NODE_MAJOR" -lt 18 ]]; then
-  echo "[jira-lens] Error: Node.js >= 18 required (found v$(node -v))."
+  echo "[Jira-MCP] Error: Node.js >= 18 required (found v$(node -v))."
   exit 1
 fi
 
 # --- Install npm dependencies ---
-echo "[jira-lens] Installing dependencies..."
+echo "[Jira-MCP] Installing dependencies..."
 npm install --prefix "$JIRA_LENS_ROOT" --silent
-echo "[jira-lens] Dependencies installed."
+echo "[Jira-MCP] Dependencies installed."
 
 # --- Ensure config directory exists ---
 mkdir -p "$JIRA_LENS_ROOT/config"
@@ -41,12 +41,12 @@ if (fs.existsSync(path)) {
 }
 
 if (config.mcpServers.jira) {
-  console.log('[jira-lens] MCP server already registered in ' + path + ' — skipped.');
+  console.log('[Jira-MCP] MCP server already registered in ' + path + ' — skipped.');
 } else {
   config.mcpServers.jira = { command: 'node', args: [serverPath] };
   fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
-  console.log('[jira-lens] Registered MCP server in ' + path);
+  console.log('[Jira-MCP] Registered MCP server in ' + path);
 }
 "
 
-echo "[jira-lens] Done. Restart Cursor to activate the Jira tools."
+echo "[Jira-MCP] Done. Restart Cursor to activate the Jira tools."

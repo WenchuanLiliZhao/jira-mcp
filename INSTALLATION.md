@@ -1,4 +1,4 @@
-# Jira Lens — Installation Guide
+# Jira-MCP — Installation Guide
 
 Connect Cursor AI to your Jira Cloud and Confluence so you can query tasks, issues, sprints, and pages directly from the IDE.
 
@@ -9,7 +9,7 @@ Connect Cursor AI to your Jira Cloud and Confluence so you can query tasks, issu
 Open any project in Cursor, switch to **Agent mode**, and say:
 
 ```
-Help me install https://github.com/<user>/jira-lens
+Help me install https://github.com/<user>/Jira-MCP
 ```
 
 The AI will follow the steps below automatically.
@@ -29,15 +29,15 @@ The AI will follow the steps below automatically.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<user>/jira-lens.git ~/jira-lens
+git clone https://github.com/<user>/Jira-MCP.git ~/Jira-MCP
 ```
 
-Clone to any location you like. `~/jira-lens` is used as an example throughout this guide.
+Clone to any location you like. `~/Jira-MCP` is used as an example throughout this guide.
 
 ### 2. Run the install script
 
 ```bash
-bash ~/jira-lens/scripts/install.sh
+bash ~/Jira-MCP/scripts/install.sh
 ```
 
 This does two things:
@@ -47,11 +47,11 @@ This does two things:
 ### 3. Link commands into your project
 
 ```bash
-bash ~/jira-lens/scripts/link-to-project.sh /path/to/your/project
+bash ~/Jira-MCP/scripts/link-to-project.sh /path/to/your/project
 ```
 
 This creates one symlink in your project:
-- `.cursor/commands/jira-lens/` — all Jira and Confluence commands
+- `.cursor/commands/Jira-MCP/` — all Jira and Confluence commands
 
 To preview what will be linked: add `--list`.
 To remove the link later: add `--unlink`.
@@ -66,7 +66,7 @@ This is only needed once — credential changes take effect immediately.
 Open a chat in **Agent mode** and run:
 
 ```
-/jira-lens/install
+/Jira-MCP/install
 ```
 
 The AI will walk you through entering your Jira domain, email, and API token. If you don't have an API token yet, create one at [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).
@@ -75,13 +75,13 @@ The AI will walk you through entering your Jira domain, email, and API token. If
 
 ## For AI Agents
 
-When a user asks you to install jira-lens, follow these steps:
+When a user asks you to install Jira-MCP, follow these steps:
 
-1. **Clone** the repo to `~/jira-lens/` (or a path the user specifies)
+1. **Clone** the repo to `~/Jira-MCP/` (or a path the user specifies)
 2. **Run** `bash <repo>/scripts/install.sh` — installs deps and registers MCP server
 3. **Run** `bash <repo>/scripts/link-to-project.sh <current-project-path>` — symlinks commands into the project
 4. **Tell the user** to restart Cursor (quit and reopen)
-5. **After restart**, run the `/jira-lens/install` command to configure Jira credentials
+5. **After restart**, run the `/Jira-MCP/install` command to configure Jira credentials
 
 ---
 
@@ -89,10 +89,10 @@ When a user asks you to install jira-lens, follow these steps:
 
 | Command | Description |
 |---|---|
-| `/jira-lens/install` | Interactive credential setup |
-| `/jira-lens/jira` | Query Jira issues, sprints, and tasks |
-| `/jira-lens/confluence` | Query Confluence spaces and pages |
-| `/jira-lens/jira-create-issues` | Plan and create Jira tasks and epics |
+| `/Jira-MCP/install` | Interactive credential setup |
+| `/Jira-MCP/jira` | Query Jira issues, sprints, and tasks |
+| `/Jira-MCP/confluence` | Query Confluence spaces and pages |
+| `/Jira-MCP/jira-create-issues` | Plan and create Jira tasks and epics |
 
 ---
 
@@ -104,7 +104,7 @@ Your credentials are incorrect. Double-check:
 - `JIRA_EMAIL` — must match your Atlassian account exactly
 - `JIRA_TOKEN` — copied in full, with no extra whitespace
 
-Re-run `/jira-lens/install` to overwrite credentials. Changes take effect immediately — no restart needed.
+Re-run `/Jira-MCP/install` to overwrite credentials. Changes take effect immediately — no restart needed.
 
 ### Tools not appearing in Cursor
 - Make sure `~/.cursor/mcp.json` uses valid JSON (no trailing commas)
@@ -112,7 +112,7 @@ Re-run `/jira-lens/install` to overwrite credentials. Changes take effect immedi
 - Fully restart Cursor (quit the app, reopen — not just reload window)
 
 ### `Cannot find package '@modelcontextprotocol/sdk'`
-Run `npm install` inside the jira-lens directory, or re-run `scripts/install.sh`.
+Run `npm install` inside the Jira-MCP directory, or re-run `scripts/install.sh`.
 
 ### `No boards found for project XYZ`
 The `list_sprints` tool requires a Jira Software **Scrum** or **Kanban** board linked to the project.
@@ -124,10 +124,10 @@ Your API token may lack permissions. Ensure the account has at least **Browse Pr
 
 ## Unlinking
 
-To remove jira-lens from a project without affecting other projects:
+To remove Jira-MCP from a project without affecting other projects:
 
 ```bash
-bash ~/jira-lens/scripts/link-to-project.sh --unlink /path/to/your/project
+bash ~/Jira-MCP/scripts/link-to-project.sh --unlink /path/to/your/project
 ```
 
 To fully uninstall, also remove the `jira` entry from `~/.cursor/mcp.json` and delete the cloned repo.
