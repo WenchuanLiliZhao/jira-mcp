@@ -15,6 +15,7 @@
  */
 
 import markdownToAdf from 'md-to-adf';
+import { mdToConfluenceStorage } from '../lib/confluence-markdown.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -271,13 +272,13 @@ const TOOLS = [
   },
   {
     name: 'create_confluence_page',
-    description: 'Create a new Confluence page in a given space. Body must be HTML in Confluence storage format.',
+    description: 'Create a new Confluence page in a given space. The body is Markdown — the server converts it to Confluence storage format automatically (fenced code blocks become syntax-highlighted macros).',
     inputSchema: {
       type: 'object',
       properties: {
         space_id:  { type: 'string', description: 'Numeric Confluence space ID — NOT the space key (e.g. not "CNTDS"). Get it from list_confluence_spaces (id field) or get_confluence_page (spaceId field).' },
         title:     { type: 'string', description: 'Page title.' },
-        body:      { type: 'string', description: 'Page body in Confluence storage format (HTML-like markup).' },
+        body:      { type: 'string', description: 'Page body in Markdown (GFM). Fenced code blocks (```lang … ```) are rendered as Confluence code macros with syntax highlighting.' },
         parent_id: { type: 'string', description: 'Optional parent page ID. If omitted, page is created at the space root.' },
       },
       required: ['space_id', 'title', 'body'],
@@ -285,13 +286,13 @@ const TOOLS = [
   },
   {
     name: 'update_confluence_page',
-    description: 'Update the title and/or body of an existing Confluence page. Requires the current version number (from get_confluence_page) — Confluence uses optimistic locking.',
+    description: 'Update the title and/or body of an existing Confluence page. The body is Markdown — the server converts it to Confluence storage format automatically. Requires the current version number (from get_confluence_page) — Confluence uses optimistic locking.',
     inputSchema: {
       type: 'object',
       properties: {
         page_id: { type: 'string', description: 'Confluence page ID to update.' },
         title:   { type: 'string', description: 'New page title.' },
-        body:    { type: 'string', description: 'New page body in Confluence storage format (HTML-like markup).' },
+        body:    { type: 'string', description: 'New page body in Markdown (GFM). Fenced code blocks (```lang … ```) are rendered as Confluence code macros with syntax highlighting.' },
         version: { type: 'number', description: 'Current version number of the page (from get_confluence_page). The server will store version+1.' },
         status:  { type: 'string', description: 'Page status after update: "current" (published, default) or "draft".' },
       },
@@ -486,7 +487,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         spaceId: space_id,
         title,
         ...(parent_id ? { parentId: parent_id } : {}),
-        body: { storage: { value: body, representation: 'storage' } },
+        body: { storage: { value: mdToConfluenceStorage(body), representation: 'storage' } },
       };
       const data = await confluenceFetch('/api/v2/pages', {
         method: 'POST',
@@ -506,7 +507,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         title,
         status,
         version: { number: version + 1 },
-        body: { storage: { value: body, representation: 'storage' } },
+        body: { storage: { value: mdToConfluenceStorage(body), representation: 'storage' } },
       };
       const data = await confluenceFetch(`/api/v2/pages/${page_id}`, {
         method: 'PUT',

@@ -36,6 +36,7 @@ Use this command when the user asks about documentation, pages, wikis, specs, me
 
 **Use `create_confluence_page` / `update_confluence_page`** when:
 - The user explicitly asks to write or update a Confluence page
+- Pass `body` as **Markdown (GFM)**. The server converts it to Confluence storage format automatically — do NOT write raw Confluence storage XML. Use fenced code blocks (` ```lang … ``` `) for any code; they become proper syntax-highlighted Confluence code macros.
 
 ---
 

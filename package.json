@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "marked": "^17.0.4",
     "md-to-adf": "^0.6.4"
   },
   "engines": {
