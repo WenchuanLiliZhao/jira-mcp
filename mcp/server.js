@@ -32,6 +32,11 @@ import {
   fetchBoards,
   fetchSprints,
   fetchSprintIssues,
+  createSprint,
+  updateSprint,
+  deleteSprint,
+  moveIssuesToSprint,
+  moveIssuesToBacklog,
   fetchProjectWithIssueTypes,
   bulkMoveIssues,
 } from '../lib/jira-client.js';
@@ -120,6 +125,94 @@ const TOOLS = [
       properties: {
         sprint_id:   { type: 'number', description: 'Sprint ID (from list_sprints)' },
         max_results: { type: 'number', description: 'Max issues to return (default 50)' },
+      },
+      required: ['sprint_id'],
+    },
+  },
+  {
+    name: 'create_sprint',
+    description: 'Create a new sprint on a Jira board. The sprint starts in "future" state. Use list_sprints to find the board ID, or set_active_project to store it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        board_id:   { type: 'number', description: 'Board ID to create the sprint on (from list_sprints)' },
+        name:       { type: 'string', description: 'Sprint name, e.g. "Sprint 12"' },
+        start_date: { type: 'string', description: 'Sprint start date in ISO 8601 format, e.g. "2025-04-01". Optional for future sprints.' },
+        end_date:   { type: 'string', description: 'Sprint end date in ISO 8601 format, e.g. "2025-04-14". Optional for future sprints.' },
+        goal:       { type: 'string', description: 'Sprint goal description (optional)' },
+      },
+      required: ['board_id', 'name'],
+    },
+  },
+  {
+    name: 'update_sprint',
+    description: 'Update an existing sprint\'s name, dates, or goal. Only provided fields are changed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sprint_id:  { type: 'number', description: 'Sprint ID (from list_sprints)' },
+        name:       { type: 'string', description: 'New sprint name' },
+        start_date: { type: 'string', description: 'New start date (ISO 8601)' },
+        end_date:   { type: 'string', description: 'New end date (ISO 8601)' },
+        goal:       { type: 'string', description: 'New sprint goal' },
+      },
+      required: ['sprint_id'],
+    },
+  },
+  {
+    name: 'start_sprint',
+    description: 'Start a future sprint, making it the active sprint. Requires start and end dates. Only one sprint can be active at a time per board.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sprint_id:  { type: 'number', description: 'Sprint ID to start (must be in "future" state)' },
+        start_date: { type: 'string', description: 'Sprint start date (ISO 8601). Required if not already set.' },
+        end_date:   { type: 'string', description: 'Sprint end date (ISO 8601). Required if not already set.' },
+      },
+      required: ['sprint_id'],
+    },
+  },
+  {
+    name: 'complete_sprint',
+    description: 'Complete the active sprint. Unfinished issues will remain in the backlog or be moved to a future sprint by Jira.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sprint_id: { type: 'number', description: 'Sprint ID to complete (must be in "active" state)' },
+      },
+      required: ['sprint_id'],
+    },
+  },
+  {
+    name: 'move_issues_to_sprint',
+    description: 'Move one or more issues into a sprint. Issues can come from the backlog or another sprint.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sprint_id:  { type: 'number', description: 'Target sprint ID' },
+        issue_keys: { type: 'array', items: { type: 'string' }, description: 'Issue keys to move, e.g. ["PROJ-1", "PROJ-2"]' },
+      },
+      required: ['sprint_id', 'issue_keys'],
+    },
+  },
+  {
+    name: 'move_issues_to_backlog',
+    description: 'Move one or more issues from their current sprint back to the backlog.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        issue_keys: { type: 'array', items: { type: 'string' }, description: 'Issue keys to move to backlog, e.g. ["PROJ-1", "PROJ-2"]' },
+      },
+      required: ['issue_keys'],
+    },
+  },
+  {
+    name: 'delete_sprint',
+    description: 'Delete a sprint. Only future (not-started) sprints can be deleted. Issues in the sprint are moved to the backlog.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sprint_id: { type: 'number', description: 'Sprint ID to delete (must be in "future" state)' },
       },
       required: ['sprint_id'],
     },
@@ -348,6 +441,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     } else if (name === 'get_sprint_issues') {
       result = await fetchSprintIssues(args.sprint_id, args.max_results ?? 50);
+
+    } else if (name === 'create_sprint') {
+      const { board_id, name: sprintName, start_date, end_date, goal } = args;
+      result = await createSprint(board_id, {
+        name: sprintName, startDate: start_date, endDate: end_date, goal,
+      });
+
+    } else if (name === 'update_sprint') {
+      const { sprint_id, name: sprintName, start_date, end_date, goal } = args;
+      result = await updateSprint(sprint_id, {
+        name: sprintName, startDate: start_date, endDate: end_date, goal,
+      });
+
+    } else if (name === 'start_sprint') {
+      const { sprint_id, start_date, end_date } = args;
+      const fields = { state: 'active' };
+      if (start_date) fields.startDate = start_date;
+      if (end_date) fields.endDate = end_date;
+      result = await updateSprint(sprint_id, fields);
+
+    } else if (name === 'complete_sprint') {
+      result = await updateSprint(args.sprint_id, { state: 'closed' });
+
+    } else if (name === 'move_issues_to_sprint') {
+      result = await moveIssuesToSprint(args.sprint_id, args.issue_keys);
+
+    } else if (name === 'move_issues_to_backlog') {
+      result = await moveIssuesToBacklog(args.issue_keys);
+
+    } else if (name === 'delete_sprint') {
+      result = await deleteSprint(args.sprint_id);
 
     } else if (name === 'get_active_project') {
       result = { ...loadState(), domain: loadSecrets().JIRA_DOMAIN };
