@@ -37,6 +37,7 @@ import {
   deleteSprint,
   moveIssuesToSprint,
   moveIssuesToBacklog,
+  rankIssues,
   fetchProjectWithIssueTypes,
   bulkMoveIssues,
 } from '../lib/jira-client.js';
@@ -215,6 +216,19 @@ const TOOLS = [
         sprint_id: { type: 'number', description: 'Sprint ID to delete (must be in "future" state)' },
       },
       required: ['sprint_id'],
+    },
+  },
+  {
+    name: 'rank_issues',
+    description: 'Reorder (rank) issues on the board or backlog. Place the given issues immediately before or after a reference issue. Exactly one of rank_before_issue or rank_after_issue must be provided.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        issue_keys:        { type: 'array', items: { type: 'string' }, description: 'Issue keys to reorder, e.g. ["PROJ-5", "PROJ-3"]. They will be placed in this order.' },
+        rank_before_issue: { type: 'string', description: 'Place the issues immediately before this issue key.' },
+        rank_after_issue:  { type: 'string', description: 'Place the issues immediately after this issue key.' },
+      },
+      required: ['issue_keys'],
     },
   },
   {
@@ -472,6 +486,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     } else if (name === 'delete_sprint') {
       result = await deleteSprint(args.sprint_id);
+
+    } else if (name === 'rank_issues') {
+      result = await rankIssues(args.issue_keys, {
+        rankBeforeIssue: args.rank_before_issue,
+        rankAfterIssue:  args.rank_after_issue,
+      });
 
     } else if (name === 'get_active_project') {
       result = { ...loadState(), domain: loadSecrets().JIRA_DOMAIN };
