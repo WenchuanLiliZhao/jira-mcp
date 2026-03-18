@@ -38,6 +38,8 @@ import {
   moveIssuesToSprint,
   moveIssuesToBacklog,
   rankIssues,
+  fetchLinkTypes,
+  linkIssues,
   fetchProjectWithIssueTypes,
   bulkMoveIssues,
 } from '../lib/jira-client.js';
@@ -229,6 +231,24 @@ const TOOLS = [
         rank_after_issue:  { type: 'string', description: 'Place the issues immediately after this issue key.' },
       },
       required: ['issue_keys'],
+    },
+  },
+  {
+    name: 'list_link_types',
+    description: 'List all available Jira issue link types (e.g. Relates, Blocks, Clones). Call this before link_issues to confirm the exact type name to use.',
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'link_issues',
+    description: 'Create a formal Jira issue link between two issues (e.g. "PROJ-1 Blocks PROJ-2"). Use list_link_types to see available link type names. The link direction follows Jira convention: source_key is the outward issue and target_key is the inward issue — e.g. for "Blocks": source_key blocks target_key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source_key:     { type: 'string', description: 'The outward issue key, e.g. "JL-1".' },
+        target_key:     { type: 'string', description: 'The inward issue key, e.g. "JL-5".' },
+        link_type_name: { type: 'string', description: 'Link type name from list_link_types, e.g. "Relates", "Blocks", "Clones". Defaults to "Relates".' },
+      },
+      required: ['source_key', 'target_key'],
     },
   },
   {
@@ -492,6 +512,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         rankBeforeIssue: args.rank_before_issue,
         rankAfterIssue:  args.rank_after_issue,
       });
+
+    } else if (name === 'list_link_types') {
+      result = await fetchLinkTypes();
+
+    } else if (name === 'link_issues') {
+      result = await linkIssues(args.source_key, args.target_key, args.link_type_name ?? 'Relates');
 
     } else if (name === 'get_active_project') {
       result = { ...loadState(), domain: loadSecrets().JIRA_DOMAIN };

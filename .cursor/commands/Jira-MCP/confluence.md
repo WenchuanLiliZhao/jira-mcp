@@ -1,10 +1,12 @@
 # Confluence Query Command
 
-Use this command when the user asks about documentation, pages, wikis, specs, meeting notes, or anything stored in Confluence.
+Use this command when the user asks to **read** documentation, pages, wikis, specs, or meeting notes stored in Confluence.
+
+> For **creating or updating** pages, use the `confluence-edit` command instead.
 
 ## Available Tools
 
-`list_confluence_spaces`, `search_confluence_pages`, `get_confluence_page`, `create_confluence_page`, `update_confluence_page`
+`list_confluence_spaces`, `search_confluence_pages`, `get_confluence_page`
 
 ---
 
@@ -15,8 +17,6 @@ Use this command when the user asks about documentation, pages, wikis, specs, me
 | `list_confluence_spaces` | All accessible spaces: id, key, name, type |
 | `search_confluence_pages` | Matching pages: id, title, space, URL — **no page body** |
 | `get_confluence_page` | Full page: title, HTML body (storage format), version, URL |
-| `create_confluence_page` | Creates a new page in a given space |
-| `update_confluence_page` | Updates an existing page's content |
 
 ---
 
@@ -34,9 +34,7 @@ Use this command when the user asks about documentation, pages, wikis, specs, me
 - The user wants the actual content of a page
 - Always call this after `search_confluence_pages` — never assume a page ID
 
-**Use `create_confluence_page` / `update_confluence_page`** when:
-- The user explicitly asks to write or update a Confluence page
-- Pass `body` as **Markdown (GFM)**. The server converts it to Confluence storage format automatically — do NOT write raw Confluence storage XML. Use fenced code blocks (` ```lang … ``` `) for any code; they become proper syntax-highlighted Confluence code macros.
+**To create or update a page**, switch to the `confluence-edit` command.
 
 ---
 

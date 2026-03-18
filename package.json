@@ -16,7 +16,8 @@
     "assign": "node cli/bulk-assign.js",
     "set-epic-link": "node cli/set-epic-link.js",
     "set-project-description": "node cli/set-project-description.js",
-    "transition": "node cli/bulk-transition.js"
+    "transition": "node cli/bulk-transition.js",
+    "sync-links": "node cli/sync-issue-links.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
