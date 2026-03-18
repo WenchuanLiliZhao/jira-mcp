@@ -35,6 +35,17 @@ Use this template for task descriptions:
 - [ ] ...
 ```
 
+## Linking issue references in descriptions
+
+Whenever a description references another Jira issue key (e.g. JL-2, JL-12), **always render it as a clickable link**:
+
+```
+[JL-12](https://<domain>/browse/JL-12)
+```
+
+- Get `<domain>` from `get_active_project` (field `domain`). Never hard-code it.
+- This applies to every mention inside `Goal`, `Context`, `Input`, `References`, `Done When`, and any other section — no bare issue keys allowed in descriptions.
+
 ## Anti-patterns (never do this)
 
 - Separate tasks for migration, endpoint, component, validation, and tests — these are steps inside ONE task.

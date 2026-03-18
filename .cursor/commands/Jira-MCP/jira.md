@@ -92,6 +92,16 @@ When presenting any list of issues (from any tool), **always include a clickable
 - **Get `domain`:** It is returned by `get_active_project` (field `domain`). Never read files to obtain it.
 - **Markdown:** Use `[KEY](https://<domain>/browse/KEY)` or a table column with links for easy clicking.
 
+## Linking issue references in descriptions
+
+Whenever you write or update a Jira issue description that mentions another issue key (e.g. JL-2, JL-12), **always render it as a clickable link** — never leave a bare key:
+
+```
+[JL-12](https://<domain>/browse/JL-12)
+```
+
+This applies to every section of the description: `Goal`, `Context`, `Input`, `References`, `Done When`, inline prose, everywhere.
+
 ---
 
 ## Common JQL Examples
